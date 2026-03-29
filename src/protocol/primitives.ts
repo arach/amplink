@@ -134,9 +134,20 @@ export type Action =
 
 interface ActionBase {
   /** Current status of the action. */
-  status: "pending" | "running" | "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed" | "awaiting_approval";
   /** Streaming output text (terminal output, diff chunks, etc.). */
   output: string;
+
+  /** Present when status is "awaiting_approval". */
+  approval?: {
+    /** Monotonic version — incremented each time this action's approval
+     *  state changes. Prevents stale phone responses from taking effect. */
+    version: number;
+    /** Human-readable description of what's being requested. */
+    description?: string;
+    /** Risk level hint for UI treatment (color, prominence). */
+    risk?: "low" | "medium" | "high";
+  };
 }
 
 /** Agent editing a file (maps to AI SDK file-change tool pattern). */
@@ -184,6 +195,7 @@ export type Delta =
   | BlockTextDelta
   | BlockActionOutputDelta
   | BlockActionStatusDelta
+  | BlockActionApprovalDelta
   | BlockEndDelta;
 
 /** A new block has started within a turn. */
@@ -221,6 +233,19 @@ export interface BlockActionStatusDelta {
   status: Action["status"];
   /** Set on completion — exit code, result, etc. */
   meta?: Record<string, unknown>;
+}
+
+/** Action transitioned to awaiting_approval — phone renders approve/deny UI. */
+export interface BlockActionApprovalDelta {
+  event: "block:action:approval";
+  sessionId: string;
+  turnId: string;
+  blockId: string;
+  approval: {
+    version: number;
+    description?: string;
+    risk?: "low" | "medium" | "high";
+  };
 }
 
 /** A block has reached a terminal state. */

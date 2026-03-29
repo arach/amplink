@@ -13,6 +13,8 @@ import type { ServerWebSocket } from "bun";
 interface Room {
   bridge: ServerWebSocket<SocketData> | null;
   clients: Set<ServerWebSocket<SocketData>>;
+  /** Bridge's public key (hex) — set when the bridge registers. */
+  bridgePublicKey?: string;
   /** Grace timer — keeps the room alive briefly after the bridge disconnects. */
   cleanupTimer?: ReturnType<typeof setTimeout>;
 }
@@ -29,18 +31,51 @@ const ROOM_IDLE_TIMEOUT_MS = 60_000;
 // Public
 // ---------------------------------------------------------------------------
 
-export function startRelay(port: number): { stop: () => void } {
+export interface RelayOptions {
+  tls?: {
+    cert: string;  // path to .crt file
+    key: string;   // path to .key file
+  };
+}
+
+export function startRelay(port: number, options: RelayOptions = {}): { stop: () => void } {
   const rooms = new Map<string, Room>();
+  // Index: bridge public key → room ID (for resolve lookups).
+  const roomByBridgeKey = new Map<string, string>();
 
   const server = Bun.serve<SocketData>({
     port,
+    ...(options.tls
+      ? {
+          tls: {
+            cert: Bun.file(options.tls.cert),
+            key: Bun.file(options.tls.key),
+          },
+        }
+      : {}),
     fetch(req, server) {
       const url = new URL(req.url);
+
+      // -- HTTP resolve endpoint ----------------------------------------------
+      // POST /resolve  { "bridgePublicKey": "hex..." }
+      // Returns { "room": "uuid" } if the bridge is currently connected.
+      // This lets the phone find the bridge's current room after a bridge restart.
+      if (url.pathname === "/resolve" && req.method === "POST") {
+        return handleResolve(req, roomByBridgeKey, rooms);
+      }
+
+      // -- WebSocket upgrade --------------------------------------------------
       const roomId = url.searchParams.get("room");
       const role = url.searchParams.get("role") as "bridge" | "client" | null;
+      const bridgeKey = url.searchParams.get("key"); // bridge sends its public key
 
       if (!roomId || !role || !["bridge", "client"].includes(role)) {
         return new Response("Missing ?room=ID&role=bridge|client", { status: 400 });
+      }
+
+      // Register bridge public key → room mapping before upgrade.
+      if (role === "bridge" && bridgeKey) {
+        roomByBridgeKey.set(bridgeKey, roomId);
       }
 
       const upgraded = server.upgrade(req, { data: { roomId, role } });
@@ -71,6 +106,9 @@ export function startRelay(port: number): { stop: () => void } {
             room.bridge.close(4001, "Replaced by new bridge");
           }
           room.bridge = ws;
+          // Store the bridge key on the room for later cleanup.
+          const url = new URL(`ws://x?${ws.data.roomId}`); // roomId is just for context
+          // The key was already registered in fetch() via roomByBridgeKey.
           console.log(`[relay] bridge joined room ${roomId}`);
         } else {
           room.clients.add(ws);
@@ -110,6 +148,10 @@ export function startRelay(port: number): { stop: () => void } {
               for (const client of room.clients) {
                 client.close(4004, "Bridge absent");
               }
+              // Clean up bridge key index.
+              for (const [key, rid] of roomByBridgeKey) {
+                if (rid === roomId) roomByBridgeKey.delete(key);
+              }
               rooms.delete(roomId);
               console.log(`[relay] room ${roomId} cleaned up (bridge absent)`);
             }, BRIDGE_ABSENCE_GRACE_MS);
@@ -121,6 +163,9 @@ export function startRelay(port: number): { stop: () => void } {
           // If room is empty (no bridge, no clients), schedule cleanup.
           if (!room.bridge && room.clients.size === 0) {
             room.cleanupTimer = setTimeout(() => {
+              for (const [key, rid] of roomByBridgeKey) {
+                if (rid === roomId) roomByBridgeKey.delete(key);
+              }
               rooms.delete(roomId);
               console.log(`[relay] room ${roomId} cleaned up (idle)`);
             }, ROOM_IDLE_TIMEOUT_MS);
@@ -130,7 +175,9 @@ export function startRelay(port: number): { stop: () => void } {
     },
   });
 
-  console.log(`[relay] listening on ws://localhost:${port}`);
+  const scheme = options.tls ? "wss" : "ws";
+  console.log(`[relay] listening on ${scheme}://localhost:${port}`);
+  console.log(`[relay] resolve endpoint: ${scheme}://localhost:${port}/resolve`);
 
   return {
     stop() {
@@ -143,7 +190,43 @@ export function startRelay(port: number): { stop: () => void } {
         }
       }
       rooms.clear();
+      roomByBridgeKey.clear();
       server.stop();
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Resolve handler — phone looks up bridge's current room by public key
+// ---------------------------------------------------------------------------
+
+async function handleResolve(
+  req: Request,
+  roomByBridgeKey: Map<string, string>,
+  rooms: Map<string, Room>,
+): Promise<Response> {
+  try {
+    const body = await req.json() as { bridgePublicKey?: string };
+    const key = body.bridgePublicKey;
+
+    if (!key || typeof key !== "string") {
+      return Response.json({ error: "missing bridgePublicKey" }, { status: 400 });
+    }
+
+    const roomId = roomByBridgeKey.get(key);
+    if (!roomId) {
+      return Response.json({ error: "bridge not found" }, { status: 404 });
+    }
+
+    // Verify the bridge is actually connected in that room.
+    const room = rooms.get(roomId);
+    if (!room?.bridge) {
+      return Response.json({ error: "bridge not connected" }, { status: 404 });
+    }
+
+    console.log(`[relay] resolved bridge ${key.slice(0, 12)}... → room ${roomId}`);
+    return Response.json({ room: roomId });
+  } catch {
+    return Response.json({ error: "invalid request" }, { status: 400 });
+  }
 }

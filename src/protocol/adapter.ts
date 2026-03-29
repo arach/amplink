@@ -65,6 +65,13 @@ export interface Adapter {
    */
   shutdown(): Promise<void>;
 
+  /**
+   * Relay an approval decision to the underlying agent.
+   * Called by the bridge after version validation passes.
+   * Adapters that don't support approvals can ignore this (optional).
+   */
+  decide?(blockId: string, decision: "approve" | "deny", reason?: string): void;
+
   // -- Event emitter surface ------------------------------------------------
 
   on(event: "event", listener: (e: PlexusEvent) => void): void;

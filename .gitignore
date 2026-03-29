@@ -32,3 +32,14 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Dev tools local state
+.dev/
+
+# Xcode user-specific state
+xcuserdata/
+*.xcuserstate
+
+# Xcode build output
+DerivedData/
+build/

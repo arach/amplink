@@ -15,6 +15,9 @@ import type {
   Prompt,
   Session,
 } from "../protocol/index.ts";
+import { OutboundBuffer, type SequencedEvent } from "./buffer.ts";
+import { StateTracker } from "./state.ts";
+import type { SessionState, SessionSummary } from "./state.ts";
 
 // ---------------------------------------------------------------------------
 // Bridge configuration
@@ -25,6 +28,8 @@ export interface BridgeConfig {
   port?: number;
   /** Registered adapter factories, keyed by adapter type. */
   adapters: Record<string, AdapterFactory>;
+  /** Max events in the outbound ring buffer (default 500). */
+  bufferCapacity?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,10 +39,13 @@ export interface BridgeConfig {
 export class Bridge {
   private sessions = new Map<string, Adapter>();
   private adapterFactories: Record<string, AdapterFactory>;
-  private listeners = new Set<(event: PlexusEvent) => void>();
+  private listeners = new Set<(event: SequencedEvent) => void>();
+  private buffer: OutboundBuffer;
+  private stateTracker = new StateTracker();
 
   constructor(private config: BridgeConfig) {
     this.adapterFactories = config.adapters;
+    this.buffer = new OutboundBuffer(config.bufferCapacity);
   }
 
   // -- Session management ---------------------------------------------------
@@ -63,18 +71,33 @@ export class Bridge {
 
     const adapter = factory(config);
 
-    // Wire adapter events to bridge listeners.
-    adapter.on("event", (e) => this.broadcast(e));
+    // Wire adapter events to state tracker, buffer, and broadcast.
+    adapter.on("event", (e) => {
+      this.stateTracker.trackEvent(sessionId, e);
+      this.broadcast(e);
+    });
     adapter.on("error", (err) => {
-      this.broadcast({
+      const errorEvent: PlexusEvent = {
         event: "session:update",
         session: { ...adapter.session, status: "error" },
-      });
+      };
+      this.stateTracker.trackEvent(sessionId, errorEvent);
+      this.broadcast(errorEvent);
       console.error(`[bridge] adapter error (${sessionId}):`, err.message);
     });
 
     this.sessions.set(sessionId, adapter);
+
+    // Register with state tracker before start so events during startup are captured.
+    this.stateTracker.createSession(sessionId, adapter.session);
+
     await adapter.start();
+
+    // Track post-start session state (adapter.start may have set status).
+    this.stateTracker.trackEvent(sessionId, {
+      event: "session:update",
+      session: { ...adapter.session },
+    });
 
     return adapter.session;
   }
@@ -101,12 +124,30 @@ export class Bridge {
     if (!adapter) return;
     await adapter.shutdown();
     this.sessions.delete(sessionId);
-    this.broadcast({ event: "session:closed", sessionId });
+    const closedEvent: PlexusEvent = { event: "session:closed", sessionId };
+    this.stateTracker.trackEvent(sessionId, closedEvent);
+    this.broadcast(closedEvent);
+    this.stateTracker.removeSession(sessionId);
   }
 
   /** List all active sessions. */
   listSessions(): Session[] {
     return [...this.sessions.values()].map((a) => ({ ...a.session }));
+  }
+
+  /**
+   * Relay an approval decision to the adapter for a given session.
+   * The caller (server.ts) is responsible for version validation.
+   */
+  decide(sessionId: string, blockId: string, decision: "approve" | "deny", reason?: string): void {
+    const adapter = this.sessions.get(sessionId);
+    if (!adapter) {
+      throw new Error(`No session: ${sessionId}`);
+    }
+    if (!adapter.decide) {
+      throw new Error("Adapter does not support approvals");
+    }
+    adapter.decide(blockId, decision, reason);
   }
 
   /** Shut down the bridge and all sessions. */
@@ -115,17 +156,50 @@ export class Bridge {
     await Promise.allSettled(ids.map((id) => this.closeSession(id)));
   }
 
+  // -- Snapshot / status ----------------------------------------------------
+
+  /** Return the full accumulated state for a session (for reconnect). */
+  getSessionSnapshot(sessionId: string): SessionState | null {
+    return this.stateTracker.getSessionState(sessionId);
+  }
+
+  /** Return lightweight summaries of all active sessions. */
+  getSessionSummaries(): SessionSummary[] {
+    return this.stateTracker.getAllSessionSummaries();
+  }
+
   // -- Event distribution ---------------------------------------------------
 
-  /** Subscribe to all Plexus events from all sessions. */
-  onEvent(listener: (event: PlexusEvent) => void): () => void {
+  /** Subscribe to all Plexus events from all sessions (receives SequencedEvents). */
+  onEvent(listener: (event: SequencedEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
+  /** Replay buffered events after `afterSeq` (for reconnecting clients). */
+  replay(afterSeq: number): SequencedEvent[] {
+    return this.buffer.replay(afterSeq);
+  }
+
+  /** Highest sequence number assigned so far (0 if no events yet). */
+  currentSeq(): number {
+    return this.buffer.currentSeq();
+  }
+
+  /** Oldest buffered sequence number (0 if buffer is empty). */
+  oldestBufferedSeq(): number {
+    return this.buffer.oldestSeq();
+  }
+
   private broadcast(event: PlexusEvent): void {
+    const seq = this.buffer.push(event);
+    const sequenced: SequencedEvent = {
+      seq,
+      event,
+      timestamp: Date.now(),
+    };
     for (const fn of this.listeners) {
-      fn(event);
+      fn(sequenced);
     }
   }
 }

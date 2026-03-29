@@ -186,15 +186,10 @@ export class ClaudeCodeAdapter extends BaseAdapter {
       }
 
       case "result": {
-        // Final summary — turn is about to end.
-        if (event.result) {
-          const block = this.startBlock(turn, {
-            type: "text",
-            text: typeof event.result === "string" ? event.result : "",
-            status: "completed",
-          });
-          this.emitBlockEnd(turn, block, "completed");
-        }
+        // Final summary — the same text was already emitted via "assistant"
+        // events during streaming. Skip creating a duplicate text block.
+        // The turn will be ended by the readStream() method after the
+        // stream closes.
         break;
       }
 

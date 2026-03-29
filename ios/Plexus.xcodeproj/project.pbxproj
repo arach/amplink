@@ -1,0 +1,628 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		040AF9D996257342BFF1E243 /* SecureTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6B68097EF2986DD92993F9 /* SecureTransport.swift */; };
+		05FF626F7692600353EF6AC3 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 817F1540699B6462613B49A6 /* ConnectionManager.swift */; };
+		0B12CAD9C2EED10FF1520C1E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE74449CD41E71C15B23CA99 /* Theme.swift */; };
+		1A064F05593DC251B6AB5A20 /* SessionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 118DD6495A884D59E538A8B4 /* SessionRowView.swift */; };
+		25A2DCFAFB9D412106061971 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A73DFD8D926AD37E44BB06D /* TimelineView.swift */; };
+		3C00F77E69CAEF95AD2D0D3C /* Primitives.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8C07B8EDC90BCD41879751D /* Primitives.swift */; };
+		4652709D7564D4AA9643274A /* ErrorBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FEEF2B57F6432DD559BADF /* ErrorBlockView.swift */; };
+		4F917E86B594E758112593DE /* BlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4484F7483B3782E827BACCC /* BlockView.swift */; };
+		65BF1BCF14048AAE4688ED88 /* PlexusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 546D477928FFAD25E339F362 /* PlexusApp.swift */; };
+		6653ACB89B1A8FA557C04CFA /* Events.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A6875421C0B6EB2EAF3DE4 /* Events.swift */; };
+		794FC0EF3731BC6D29C8FCEF /* FileBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20519FEF6BAEEE78DED428F8 /* FileBlockView.swift */; };
+		796E65F80E7876C6ADB31EFC /* QRPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B499A5FFC9DD697F324C3A /* QRPayload.swift */; };
+		8D9FBDA8E9949CA3797C4314 /* NoiseProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 614344AFC739745B68494338 /* NoiseProtocolTests.swift */; };
+		901095C9BF2DFD36C52A24BD /* ReasoningBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E92FDB22A15869352687824 /* ReasoningBlockView.swift */; };
+		925C7585415CC0E3C5B2F4F4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B42165C58E9CDB9FC3F469 /* ContentView.swift */; };
+		92B075689B125088594CD0A8 /* NoiseProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B135C068D545ECD66E5459F /* NoiseProtocol.swift */; };
+		951C023468E69DB67212C81C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D783C8EB0CF181E326D2D06B /* Assets.xcassets */; };
+		9C37ACD09A8B304313EE5530 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB3B3034137978EC58474CF4 /* QRScannerView.swift */; };
+		A21238CBC9BEE48AFAE61F58 /* WorkspaceBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11B67FA1D756967B71770EAE /* WorkspaceBrowserView.swift */; };
+		A2BB2EFD1AA877D878AC3E53 /* Identity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D9AC3A41ABF77E28C9F487 /* Identity.swift */; };
+		B0AED39F0BAAFDB8937135C7 /* ActionBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56780D841F70D7E6B23C550E /* ActionBlockView.swift */; };
+		B78BBEF203AE5F0BCFBB619E /* TextBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FF61B5660D19E71F8D13278 /* TextBlockView.swift */; };
+		BA4AEF769ED94756186E1698 /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87566EF48E379978562603F4 /* SessionListView.swift */; };
+		BF24F476BB147ADBCCB6A71F /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF4E98DAEF85C5B5FEDBDD03 /* SessionStore.swift */; };
+		CF75828B2E29388692DC5E86 /* TurnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E8FF2DE616B3272C4FD803 /* TurnView.swift */; };
+		E0A55292A55DEBA16C2830DA /* RPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8590D1BE954C9E0A173D5B5C /* RPC.swift */; };
+		E17809B201D868F665E949FE /* ComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C772A12B39A72B37766AB12B /* ComposerView.swift */; };
+		E637975D0B0661AC049FE26B /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A414EC6E835B8B012D3608 /* PairingView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		94EEA6C67D70D13C6BD2FCF2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7171E317A2DC4B5D73CD6D92 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BC701E23C4AA3CE73E2D1478;
+			remoteInfo = Plexus;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		118DD6495A884D59E538A8B4 /* SessionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRowView.swift; sourceTree = "<group>"; };
+		11B67FA1D756967B71770EAE /* WorkspaceBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBrowserView.swift; sourceTree = "<group>"; };
+		16B499A5FFC9DD697F324C3A /* QRPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRPayload.swift; sourceTree = "<group>"; };
+		20519FEF6BAEEE78DED428F8 /* FileBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBlockView.swift; sourceTree = "<group>"; };
+		3B135C068D545ECD66E5459F /* NoiseProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseProtocol.swift; sourceTree = "<group>"; };
+		3E92FDB22A15869352687824 /* ReasoningBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningBlockView.swift; sourceTree = "<group>"; };
+		45A414EC6E835B8B012D3608 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
+		4FF61B5660D19E71F8D13278 /* TextBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlockView.swift; sourceTree = "<group>"; };
+		546D477928FFAD25E339F362 /* PlexusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexusApp.swift; sourceTree = "<group>"; };
+		56780D841F70D7E6B23C550E /* ActionBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionBlockView.swift; sourceTree = "<group>"; };
+		614344AFC739745B68494338 /* NoiseProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseProtocolTests.swift; sourceTree = "<group>"; };
+		72B42165C58E9CDB9FC3F469 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		75D9AC3A41ABF77E28C9F487 /* Identity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Identity.swift; sourceTree = "<group>"; };
+		7A73DFD8D926AD37E44BB06D /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		817F1540699B6462613B49A6 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
+		8590D1BE954C9E0A173D5B5C /* RPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPC.swift; sourceTree = "<group>"; };
+		87566EF48E379978562603F4 /* SessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListView.swift; sourceTree = "<group>"; };
+		8A6B68097EF2986DD92993F9 /* SecureTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureTransport.swift; sourceTree = "<group>"; };
+		9E65A50B731283903D5A5E34 /* PlexusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PlexusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB2A68EF484B06D7BADF61C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AE74449CD41E71C15B23CA99 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		C772A12B39A72B37766AB12B /* ComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerView.swift; sourceTree = "<group>"; };
+		D2E18DD9600498AD2A23409A /* Plexus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Plexus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D6E8FF2DE616B3272C4FD803 /* TurnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnView.swift; sourceTree = "<group>"; };
+		D783C8EB0CF181E326D2D06B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D7FEEF2B57F6432DD559BADF /* ErrorBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBlockView.swift; sourceTree = "<group>"; };
+		DB3B3034137978EC58474CF4 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		DF4E98DAEF85C5B5FEDBDD03 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		E7A6875421C0B6EB2EAF3DE4 /* Events.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Events.swift; sourceTree = "<group>"; };
+		E8C07B8EDC90BCD41879751D /* Primitives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Primitives.swift; sourceTree = "<group>"; };
+		F4484F7483B3782E827BACCC /* BlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		026AE774F55D6DB9AF642E98 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				817F1540699B6462613B49A6 /* ConnectionManager.swift */,
+				DF4E98DAEF85C5B5FEDBDD03 /* SessionStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		0C5C1B2665A0458D340153B6 /* Plexus */ = {
+			isa = PBXGroup;
+			children = (
+				AB2A68EF484B06D7BADF61C3 /* Info.plist */,
+				2CBFC4C7A41D1E9FDACA0979 /* App */,
+				A54A243CD14F4F45374B16C5 /* Models */,
+				1AF680700DF2B78A7BF6CF0E /* Resources */,
+				CD89D6D8D37B789650E3226D /* Security */,
+				026AE774F55D6DB9AF642E98 /* Services */,
+				85F01C188E6B92CE130FB691 /* Views */,
+			);
+			path = Plexus;
+			sourceTree = "<group>";
+		};
+		1369FBE1D410BFF16AF6267C /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				614344AFC739745B68494338 /* NoiseProtocolTests.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		15E7EDEB645BAD72BB73B461 /* Composer */ = {
+			isa = PBXGroup;
+			children = (
+				C772A12B39A72B37766AB12B /* ComposerView.swift */,
+			);
+			path = Composer;
+			sourceTree = "<group>";
+		};
+		1AF680700DF2B78A7BF6CF0E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D783C8EB0CF181E326D2D06B /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		1E285CFD07355BC0F58C6887 /* Pairing */ = {
+			isa = PBXGroup;
+			children = (
+				45A414EC6E835B8B012D3608 /* PairingView.swift */,
+				DB3B3034137978EC58474CF4 /* QRScannerView.swift */,
+			);
+			path = Pairing;
+			sourceTree = "<group>";
+		};
+		2CBFC4C7A41D1E9FDACA0979 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				72B42165C58E9CDB9FC3F469 /* ContentView.swift */,
+				546D477928FFAD25E339F362 /* PlexusApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		48B0AE902529A2597E455C11 /* SessionList */ = {
+			isa = PBXGroup;
+			children = (
+				87566EF48E379978562603F4 /* SessionListView.swift */,
+				118DD6495A884D59E538A8B4 /* SessionRowView.swift */,
+			);
+			path = SessionList;
+			sourceTree = "<group>";
+		};
+		800BB5A461FE5E6B747C4446 /* Workspace */ = {
+			isa = PBXGroup;
+			children = (
+				11B67FA1D756967B71770EAE /* WorkspaceBrowserView.swift */,
+			);
+			path = Workspace;
+			sourceTree = "<group>";
+		};
+		85F01C188E6B92CE130FB691 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AE74449CD41E71C15B23CA99 /* Theme.swift */,
+				E937E722B2CBD6C0F135CE50 /* Blocks */,
+				15E7EDEB645BAD72BB73B461 /* Composer */,
+				1E285CFD07355BC0F58C6887 /* Pairing */,
+				48B0AE902529A2597E455C11 /* SessionList */,
+				DAA43D912DBED43F15F22705 /* Timeline */,
+				800BB5A461FE5E6B747C4446 /* Workspace */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		999AE28B53E4A5649AF264B4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D2E18DD9600498AD2A23409A /* Plexus.app */,
+				9E65A50B731283903D5A5E34 /* PlexusTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9ED83F954BAE69B2BF38416E /* PlexusTests */ = {
+			isa = PBXGroup;
+			children = (
+				1369FBE1D410BFF16AF6267C /* Security */,
+			);
+			path = PlexusTests;
+			sourceTree = "<group>";
+		};
+		A54A243CD14F4F45374B16C5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E7A6875421C0B6EB2EAF3DE4 /* Events.swift */,
+				E8C07B8EDC90BCD41879751D /* Primitives.swift */,
+				8590D1BE954C9E0A173D5B5C /* RPC.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		CD89D6D8D37B789650E3226D /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				75D9AC3A41ABF77E28C9F487 /* Identity.swift */,
+				3B135C068D545ECD66E5459F /* NoiseProtocol.swift */,
+				16B499A5FFC9DD697F324C3A /* QRPayload.swift */,
+				8A6B68097EF2986DD92993F9 /* SecureTransport.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		D2DD616BBD490F3860EB6AFF = {
+			isa = PBXGroup;
+			children = (
+				0C5C1B2665A0458D340153B6 /* Plexus */,
+				9ED83F954BAE69B2BF38416E /* PlexusTests */,
+				999AE28B53E4A5649AF264B4 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		DAA43D912DBED43F15F22705 /* Timeline */ = {
+			isa = PBXGroup;
+			children = (
+				7A73DFD8D926AD37E44BB06D /* TimelineView.swift */,
+				D6E8FF2DE616B3272C4FD803 /* TurnView.swift */,
+			);
+			path = Timeline;
+			sourceTree = "<group>";
+		};
+		E937E722B2CBD6C0F135CE50 /* Blocks */ = {
+			isa = PBXGroup;
+			children = (
+				56780D841F70D7E6B23C550E /* ActionBlockView.swift */,
+				F4484F7483B3782E827BACCC /* BlockView.swift */,
+				D7FEEF2B57F6432DD559BADF /* ErrorBlockView.swift */,
+				20519FEF6BAEEE78DED428F8 /* FileBlockView.swift */,
+				3E92FDB22A15869352687824 /* ReasoningBlockView.swift */,
+				4FF61B5660D19E71F8D13278 /* TextBlockView.swift */,
+			);
+			path = Blocks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		506DFD1CDD77C13543FF9165 /* PlexusTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 08C7DBEFA7F65FB579EEAE78 /* Build configuration list for PBXNativeTarget "PlexusTests" */;
+			buildPhases = (
+				8A7A516A08F0122CED9F1CC1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0197984D7DEA8DAA169461CB /* PBXTargetDependency */,
+			);
+			name = PlexusTests;
+			packageProductDependencies = (
+			);
+			productName = PlexusTests;
+			productReference = 9E65A50B731283903D5A5E34 /* PlexusTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		BC701E23C4AA3CE73E2D1478 /* Plexus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 354DA792B825D379E43ECB85 /* Build configuration list for PBXNativeTarget "Plexus" */;
+			buildPhases = (
+				4EC17BEAA4B142459F23BF76 /* Sources */,
+				25E4A565F23762C2F55175AE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Plexus;
+			packageProductDependencies = (
+			);
+			productName = Plexus;
+			productReference = D2E18DD9600498AD2A23409A /* Plexus.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7171E317A2DC4B5D73CD6D92 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					506DFD1CDD77C13543FF9165 = {
+						DevelopmentTeam = 2U83JFPW66;
+					};
+					BC701E23C4AA3CE73E2D1478 = {
+						DevelopmentTeam = 2U83JFPW66;
+					};
+				};
+			};
+			buildConfigurationList = E69ED854812EDBA99BBC8010 /* Build configuration list for PBXProject "Plexus" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = D2DD616BBD490F3860EB6AFF;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BC701E23C4AA3CE73E2D1478 /* Plexus */,
+				506DFD1CDD77C13543FF9165 /* PlexusTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		25E4A565F23762C2F55175AE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				951C023468E69DB67212C81C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4EC17BEAA4B142459F23BF76 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0AED39F0BAAFDB8937135C7 /* ActionBlockView.swift in Sources */,
+				4F917E86B594E758112593DE /* BlockView.swift in Sources */,
+				E17809B201D868F665E949FE /* ComposerView.swift in Sources */,
+				05FF626F7692600353EF6AC3 /* ConnectionManager.swift in Sources */,
+				925C7585415CC0E3C5B2F4F4 /* ContentView.swift in Sources */,
+				4652709D7564D4AA9643274A /* ErrorBlockView.swift in Sources */,
+				6653ACB89B1A8FA557C04CFA /* Events.swift in Sources */,
+				794FC0EF3731BC6D29C8FCEF /* FileBlockView.swift in Sources */,
+				A2BB2EFD1AA877D878AC3E53 /* Identity.swift in Sources */,
+				92B075689B125088594CD0A8 /* NoiseProtocol.swift in Sources */,
+				E637975D0B0661AC049FE26B /* PairingView.swift in Sources */,
+				65BF1BCF14048AAE4688ED88 /* PlexusApp.swift in Sources */,
+				3C00F77E69CAEF95AD2D0D3C /* Primitives.swift in Sources */,
+				796E65F80E7876C6ADB31EFC /* QRPayload.swift in Sources */,
+				9C37ACD09A8B304313EE5530 /* QRScannerView.swift in Sources */,
+				E0A55292A55DEBA16C2830DA /* RPC.swift in Sources */,
+				901095C9BF2DFD36C52A24BD /* ReasoningBlockView.swift in Sources */,
+				040AF9D996257342BFF1E243 /* SecureTransport.swift in Sources */,
+				BA4AEF769ED94756186E1698 /* SessionListView.swift in Sources */,
+				1A064F05593DC251B6AB5A20 /* SessionRowView.swift in Sources */,
+				BF24F476BB147ADBCCB6A71F /* SessionStore.swift in Sources */,
+				B78BBEF203AE5F0BCFBB619E /* TextBlockView.swift in Sources */,
+				0B12CAD9C2EED10FF1520C1E /* Theme.swift in Sources */,
+				25A2DCFAFB9D412106061971 /* TimelineView.swift in Sources */,
+				CF75828B2E29388692DC5E86 /* TurnView.swift in Sources */,
+				A21238CBC9BEE48AFAE61F58 /* WorkspaceBrowserView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A7A516A08F0122CED9F1CC1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D9FBDA8E9949CA3797C4314 /* NoiseProtocolTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0197984D7DEA8DAA169461CB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BC701E23C4AA3CE73E2D1478 /* Plexus */;
+			targetProxy = 94EEA6C67D70D13C6BD2FCF2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		19545BA14A086CEAC4A9B3D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plexus.PlexusTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plexus.app/Plexus";
+			};
+			name = Debug;
+		};
+		4AD33FC48853D4FAE7A67454 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Plexus/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Plexus uses the camera to scan QR codes for bridge pairing";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationAllButUpsideDown;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.plexus.Plexus;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7912E9E54B2BFDE5878F4225 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Plexus/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Plexus uses the camera to scan QR codes for bridge pairing";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationAllButUpsideDown;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.plexus.Plexus;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8CE3E2A61D62FAFE58052753 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 2U83JFPW66;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		9C3F102F8EDD84727AF4DB64 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.plexus.PlexusTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plexus.app/Plexus";
+			};
+			name = Release;
+		};
+		B249F053DD69CF5F978941BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 2U83JFPW66;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		08C7DBEFA7F65FB579EEAE78 /* Build configuration list for PBXNativeTarget "PlexusTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				19545BA14A086CEAC4A9B3D2 /* Debug */,
+				9C3F102F8EDD84727AF4DB64 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		354DA792B825D379E43ECB85 /* Build configuration list for PBXNativeTarget "Plexus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4AD33FC48853D4FAE7A67454 /* Debug */,
+				7912E9E54B2BFDE5878F4225 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E69ED854812EDBA99BBC8010 /* Build configuration list for PBXProject "Plexus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8CE3E2A61D62FAFE58052753 /* Debug */,
+				B249F053DD69CF5F978941BF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7171E317A2DC4B5D73CD6D92 /* Project object */;
+}

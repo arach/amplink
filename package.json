@@ -5,10 +5,12 @@
   "type": "module",
   "private": true,
   "bin": {
+    "plexus": "./src/cli.ts",
     "plexus-bridge": "./src/bridge/main.ts",
     "plexus-relay": "./src/relay/main.ts"
   },
   "scripts": {
+    "plexus": "bun run src/cli.ts",
     "bridge": "bun run src/bridge/main.ts",
     "relay": "bun run src/relay/main.ts",
     "typecheck": "tsc --noEmit"
@@ -22,6 +24,7 @@
   "dependencies": {
     "@noble/ciphers": "^2.1.1",
     "@noble/curves": "^2.0.1",
-    "@noble/hashes": "^2.0.1"
+    "@noble/hashes": "^2.0.1",
+    "uqr": "^0.1.2"
   }
 }
