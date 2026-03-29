@@ -1,0 +1,27 @@
+{
+  "name": "plexus",
+  "version": "0.1.0",
+  "description": "Universal mobile viewport for AI coding sessions",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "plexus-bridge": "./src/bridge/main.ts",
+    "plexus-relay": "./src/relay/main.ts"
+  },
+  "scripts": {
+    "bridge": "bun run src/bridge/main.ts",
+    "relay": "bun run src/relay/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^2.1.1",
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1"
+  }
+}
