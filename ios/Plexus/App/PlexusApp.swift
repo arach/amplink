@@ -13,6 +13,7 @@ struct PlexusApp: App {
 
     @State private var sessionStore: SessionStore
     @State private var connectionManager: ConnectionManager
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     init() {
         bootLogger.notice("Plexus app launching")
@@ -25,9 +26,32 @@ struct PlexusApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(sessionStore)
-                .environment(connectionManager)
+            Group {
+                if hasCompletedOnboarding {
+                    ContentView()
+                        .environment(sessionStore)
+                        .environment(connectionManager)
+                } else {
+                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                }
+            }
+            .onChange(of: hasCompletedOnboarding) {
+                if hasCompletedOnboarding, connectionManager.hasTrustedBridge {
+                    Task { await connectionManager.reconnect() }
+                }
+            }
+            .task {
+                // Start loading Parakeet immediately on app launch.
+                #if canImport(FluidAudio)
+                PlexusLog.voice.info("Preloading Parakeet model at app launch")
+                do {
+                    try await ParakeetModelManager.shared.downloadAndLoad()
+                    PlexusLog.voice.info("Parakeet ready")
+                } catch {
+                    PlexusLog.voice.warning("Parakeet preload failed: \(error.localizedDescription)")
+                }
+                #endif
+            }
         }
     }
 }

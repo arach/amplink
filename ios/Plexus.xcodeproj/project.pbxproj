@@ -9,16 +9,21 @@
 /* Begin PBXBuildFile section */
 		040AF9D996257342BFF1E243 /* SecureTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6B68097EF2986DD92993F9 /* SecureTransport.swift */; };
 		05FF626F7692600353EF6AC3 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 817F1540699B6462613B49A6 /* ConnectionManager.swift */; };
+		0A965EE523252942554A75FB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BA95F8584A94948CFDE2E2 /* SettingsView.swift */; };
 		0B12CAD9C2EED10FF1520C1E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE74449CD41E71C15B23CA99 /* Theme.swift */; };
 		1A064F05593DC251B6AB5A20 /* SessionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 118DD6495A884D59E538A8B4 /* SessionRowView.swift */; };
+		1C53C014665E853B504F9106 /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 169B756449A1161F08ED31EF /* FluidAudio */; };
 		25A2DCFAFB9D412106061971 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A73DFD8D926AD37E44BB06D /* TimelineView.swift */; };
 		3C00F77E69CAEF95AD2D0D3C /* Primitives.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8C07B8EDC90BCD41879751D /* Primitives.swift */; };
+		444B87B49BC388197F0E85A9 /* MicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = E848E41D59098E261989EC72 /* MicButton.swift */; };
 		4652709D7564D4AA9643274A /* ErrorBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FEEF2B57F6432DD559BADF /* ErrorBlockView.swift */; };
+		4E930A19FACDD60129664DEE /* PlexusVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8AF0EDEF795AD6423B7898 /* PlexusVoice.swift */; };
 		4F917E86B594E758112593DE /* BlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4484F7483B3782E827BACCC /* BlockView.swift */; };
 		65BF1BCF14048AAE4688ED88 /* PlexusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 546D477928FFAD25E339F362 /* PlexusApp.swift */; };
 		6653ACB89B1A8FA557C04CFA /* Events.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A6875421C0B6EB2EAF3DE4 /* Events.swift */; };
 		794FC0EF3731BC6D29C8FCEF /* FileBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20519FEF6BAEEE78DED428F8 /* FileBlockView.swift */; };
 		796E65F80E7876C6ADB31EFC /* QRPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B499A5FFC9DD697F324C3A /* QRPayload.swift */; };
+		83D529354F221E0CC7B377B2 /* RecordingIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D449DF3709A2E4AD8B824A /* RecordingIndicator.swift */; };
 		8D9FBDA8E9949CA3797C4314 /* NoiseProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 614344AFC739745B68494338 /* NoiseProtocolTests.swift */; };
 		901095C9BF2DFD36C52A24BD /* ReasoningBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E92FDB22A15869352687824 /* ReasoningBlockView.swift */; };
 		925C7585415CC0E3C5B2F4F4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B42165C58E9CDB9FC3F469 /* ContentView.swift */; };
@@ -32,9 +37,12 @@
 		BA4AEF769ED94756186E1698 /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87566EF48E379978562603F4 /* SessionListView.swift */; };
 		BF24F476BB147ADBCCB6A71F /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF4E98DAEF85C5B5FEDBDD03 /* SessionStore.swift */; };
 		CF75828B2E29388692DC5E86 /* TurnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E8FF2DE616B3272C4FD803 /* TurnView.swift */; };
+		DBD8E8CFB69930E055783346 /* PlexusLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CCFCAE4159929DD7FAEDE45 /* PlexusLog.swift */; };
 		E0A55292A55DEBA16C2830DA /* RPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8590D1BE954C9E0A173D5B5C /* RPC.swift */; };
 		E17809B201D868F665E949FE /* ComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C772A12B39A72B37766AB12B /* ComposerView.swift */; };
 		E637975D0B0661AC049FE26B /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A414EC6E835B8B012D3608 /* PairingView.swift */; };
+		EE0E24F133F80E43282170D4 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 860263F7368AB180652B883A /* LogView.swift */; };
+		FACA0BAE612F59873784B555 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 375A26A387D3052C2A3BDCA9 /* OnboardingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,10 +59,13 @@
 		118DD6495A884D59E538A8B4 /* SessionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRowView.swift; sourceTree = "<group>"; };
 		11B67FA1D756967B71770EAE /* WorkspaceBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBrowserView.swift; sourceTree = "<group>"; };
 		16B499A5FFC9DD697F324C3A /* QRPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRPayload.swift; sourceTree = "<group>"; };
+		1CCFCAE4159929DD7FAEDE45 /* PlexusLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexusLog.swift; sourceTree = "<group>"; };
 		20519FEF6BAEEE78DED428F8 /* FileBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBlockView.swift; sourceTree = "<group>"; };
+		375A26A387D3052C2A3BDCA9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		3B135C068D545ECD66E5459F /* NoiseProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseProtocol.swift; sourceTree = "<group>"; };
 		3E92FDB22A15869352687824 /* ReasoningBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningBlockView.swift; sourceTree = "<group>"; };
 		45A414EC6E835B8B012D3608 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
+		47D449DF3709A2E4AD8B824A /* RecordingIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIndicator.swift; sourceTree = "<group>"; };
 		4FF61B5660D19E71F8D13278 /* TextBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlockView.swift; sourceTree = "<group>"; };
 		546D477928FFAD25E339F362 /* PlexusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexusApp.swift; sourceTree = "<group>"; };
 		56780D841F70D7E6B23C550E /* ActionBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionBlockView.swift; sourceTree = "<group>"; };
@@ -64,28 +75,44 @@
 		7A73DFD8D926AD37E44BB06D /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		817F1540699B6462613B49A6 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
 		8590D1BE954C9E0A173D5B5C /* RPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPC.swift; sourceTree = "<group>"; };
+		860263F7368AB180652B883A /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		87566EF48E379978562603F4 /* SessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListView.swift; sourceTree = "<group>"; };
 		8A6B68097EF2986DD92993F9 /* SecureTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureTransport.swift; sourceTree = "<group>"; };
 		9E65A50B731283903D5A5E34 /* PlexusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PlexusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB2A68EF484B06D7BADF61C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AE74449CD41E71C15B23CA99 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		BA8AF0EDEF795AD6423B7898 /* PlexusVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexusVoice.swift; sourceTree = "<group>"; };
 		C772A12B39A72B37766AB12B /* ComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerView.swift; sourceTree = "<group>"; };
 		D2E18DD9600498AD2A23409A /* Plexus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Plexus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D6E8FF2DE616B3272C4FD803 /* TurnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnView.swift; sourceTree = "<group>"; };
 		D783C8EB0CF181E326D2D06B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D7BA95F8584A94948CFDE2E2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D7FEEF2B57F6432DD559BADF /* ErrorBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBlockView.swift; sourceTree = "<group>"; };
 		DB3B3034137978EC58474CF4 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		DF4E98DAEF85C5B5FEDBDD03 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		E7A6875421C0B6EB2EAF3DE4 /* Events.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Events.swift; sourceTree = "<group>"; };
+		E848E41D59098E261989EC72 /* MicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicButton.swift; sourceTree = "<group>"; };
 		E8C07B8EDC90BCD41879751D /* Primitives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Primitives.swift; sourceTree = "<group>"; };
 		F4484F7483B3782E827BACCC /* BlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		196FD66619940DF5D99DE1B8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1C53C014665E853B504F9106 /* FluidAudio in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		026AE774F55D6DB9AF642E98 /* Services */ = {
 			isa = PBXGroup;
 			children = (
 				817F1540699B6462613B49A6 /* ConnectionManager.swift */,
+				1CCFCAE4159929DD7FAEDE45 /* PlexusLog.swift */,
 				DF4E98DAEF85C5B5FEDBDD03 /* SessionStore.swift */,
 			);
 			path = Services;
@@ -101,6 +128,7 @@
 				CD89D6D8D37B789650E3226D /* Security */,
 				026AE774F55D6DB9AF642E98 /* Services */,
 				85F01C188E6B92CE130FB691 /* Views */,
+				14096DE75A4A79D9489DBAEB /* Voice */,
 			);
 			path = Plexus;
 			sourceTree = "<group>";
@@ -113,10 +141,20 @@
 			path = Security;
 			sourceTree = "<group>";
 		};
+		14096DE75A4A79D9489DBAEB /* Voice */ = {
+			isa = PBXGroup;
+			children = (
+				BA8AF0EDEF795AD6423B7898 /* PlexusVoice.swift */,
+			);
+			path = Voice;
+			sourceTree = "<group>";
+		};
 		15E7EDEB645BAD72BB73B461 /* Composer */ = {
 			isa = PBXGroup;
 			children = (
 				C772A12B39A72B37766AB12B /* ComposerView.swift */,
+				E848E41D59098E261989EC72 /* MicButton.swift */,
+				47D449DF3709A2E4AD8B824A /* RecordingIndicator.swift */,
 			);
 			path = Composer;
 			sourceTree = "<group>";
@@ -164,14 +202,24 @@
 			path = Workspace;
 			sourceTree = "<group>";
 		};
+		80F5F458B5702EF246FD2B96 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				375A26A387D3052C2A3BDCA9 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
 		85F01C188E6B92CE130FB691 /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				AE74449CD41E71C15B23CA99 /* Theme.swift */,
 				E937E722B2CBD6C0F135CE50 /* Blocks */,
 				15E7EDEB645BAD72BB73B461 /* Composer */,
+				80F5F458B5702EF246FD2B96 /* Onboarding */,
 				1E285CFD07355BC0F58C6887 /* Pairing */,
 				48B0AE902529A2597E455C11 /* SessionList */,
+				D5761A1B06E008D812439E9F /* Settings */,
 				DAA43D912DBED43F15F22705 /* Timeline */,
 				800BB5A461FE5E6B747C4446 /* Workspace */,
 			);
@@ -225,6 +273,15 @@
 			);
 			sourceTree = "<group>";
 		};
+		D5761A1B06E008D812439E9F /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				860263F7368AB180652B883A /* LogView.swift */,
+				D7BA95F8584A94948CFDE2E2 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		DAA43D912DBED43F15F22705 /* Timeline */ = {
 			isa = PBXGroup;
 			children = (
@@ -274,6 +331,7 @@
 			buildPhases = (
 				4EC17BEAA4B142459F23BF76 /* Sources */,
 				25E4A565F23762C2F55175AE /* Resources */,
+				196FD66619940DF5D99DE1B8 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -281,6 +339,7 @@
 			);
 			name = Plexus;
 			packageProductDependencies = (
+				169B756449A1161F08ED31EF /* FluidAudio */,
 			);
 			productName = Plexus;
 			productReference = D2E18DD9600498AD2A23409A /* Plexus.app */;
@@ -313,6 +372,9 @@
 			);
 			mainGroup = D2DD616BBD490F3860EB6AFF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				432A1528C6AE1DEA1B173F3C /* XCRemoteSwiftPackageReference "FluidAudio" */,
+			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
@@ -348,18 +410,25 @@
 				6653ACB89B1A8FA557C04CFA /* Events.swift in Sources */,
 				794FC0EF3731BC6D29C8FCEF /* FileBlockView.swift in Sources */,
 				A2BB2EFD1AA877D878AC3E53 /* Identity.swift in Sources */,
+				EE0E24F133F80E43282170D4 /* LogView.swift in Sources */,
+				444B87B49BC388197F0E85A9 /* MicButton.swift in Sources */,
 				92B075689B125088594CD0A8 /* NoiseProtocol.swift in Sources */,
+				FACA0BAE612F59873784B555 /* OnboardingView.swift in Sources */,
 				E637975D0B0661AC049FE26B /* PairingView.swift in Sources */,
 				65BF1BCF14048AAE4688ED88 /* PlexusApp.swift in Sources */,
+				DBD8E8CFB69930E055783346 /* PlexusLog.swift in Sources */,
+				4E930A19FACDD60129664DEE /* PlexusVoice.swift in Sources */,
 				3C00F77E69CAEF95AD2D0D3C /* Primitives.swift in Sources */,
 				796E65F80E7876C6ADB31EFC /* QRPayload.swift in Sources */,
 				9C37ACD09A8B304313EE5530 /* QRScannerView.swift in Sources */,
 				E0A55292A55DEBA16C2830DA /* RPC.swift in Sources */,
 				901095C9BF2DFD36C52A24BD /* ReasoningBlockView.swift in Sources */,
+				83D529354F221E0CC7B377B2 /* RecordingIndicator.swift in Sources */,
 				040AF9D996257342BFF1E243 /* SecureTransport.swift in Sources */,
 				BA4AEF769ED94756186E1698 /* SessionListView.swift in Sources */,
 				1A064F05593DC251B6AB5A20 /* SessionRowView.swift in Sources */,
 				BF24F476BB147ADBCCB6A71F /* SessionStore.swift in Sources */,
+				0A965EE523252942554A75FB /* SettingsView.swift in Sources */,
 				B78BBEF203AE5F0BCFBB619E /* TextBlockView.swift in Sources */,
 				0B12CAD9C2EED10FF1520C1E /* Theme.swift in Sources */,
 				25A2DCFAFB9D412106061971 /* TimelineView.swift in Sources */,
@@ -413,6 +482,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Plexus/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Plexus uses the camera to scan QR codes for bridge pairing";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Plexus uses the microphone for voice-to-text input";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Plexus uses on-device speech recognition to transcribe voice input";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -439,6 +510,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Plexus/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Plexus uses the camera to scan QR codes for bridge pairing";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Plexus uses the microphone for voice-to-text input";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Plexus uses on-device speech recognition to transcribe voice input";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -507,7 +580,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -581,7 +654,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -623,6 +696,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		432A1528C6AE1DEA1B173F3C /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		169B756449A1161F08ED31EF /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 432A1528C6AE1DEA1B173F3C /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7171E317A2DC4B5D73CD6D92 /* Project object */;
 }

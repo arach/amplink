@@ -215,6 +215,7 @@ export function startBridgeServer(
 // ---------------------------------------------------------------------------
 
 export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCResponse> {
+  console.log(`[rpc] ${req.method}`);
   try {
     switch (req.method) {
       case "session/create": {
@@ -324,6 +325,7 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
       // -- Workspace discovery ------------------------------------------------
 
       case "workspace/info": {
+        console.log("[rpc] workspace/info");
         const config = resolveConfig();
         const configuredRoot = config.workspace?.root;
         if (!configuredRoot) {
@@ -338,6 +340,8 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
       }
 
       case "workspace/list": {
+        const p0 = req.params as { path?: string } | undefined;
+        console.log(`[rpc] workspace/list path=${p0?.path ?? "(root)"}`);
         const config = resolveConfig();
         const configuredRoot = config.workspace?.root;
         if (!configuredRoot) {
@@ -358,6 +362,7 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
 
       case "workspace/open": {
         const p = req.params as { path: string; adapter?: string; name?: string };
+        console.log(`[rpc] workspace/open path=${p.path} adapter=${p.adapter ?? "claude-code"}`);
         const config = resolveConfig();
         const configuredRoot = config.workspace?.root;
 

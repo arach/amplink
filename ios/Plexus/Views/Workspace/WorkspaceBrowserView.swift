@@ -1,8 +1,7 @@
 // WorkspaceBrowserView — Browse and open projects from the bridge's workspace.
 //
-// Fetches directory listings from the bridge via workspace/list RPC,
-// shows project markers (git, node, swift, rust, go, python, etc.),
-// and lets users open a session in any project directory.
+// Tap a project → opens a claude-code session in that directory → navigates to it.
+// Long-press for adapter options. Browsing into subdirectories supported.
 
 import SwiftUI
 
@@ -10,14 +9,16 @@ struct WorkspaceBrowserView: View {
     @Environment(ConnectionManager.self) private var connection
     @Environment(\.dismiss) private var dismiss
 
+    /// Called with the new session ID after successfully opening a project.
+    var onSessionCreated: ((String) -> Void)?
+
     @State private var entries: [DirectoryEntry] = []
     @State private var currentPath: String = ""
     @State private var rootPath: String = ""
     @State private var breadcrumbs: [String] = []
     @State private var isLoading = true
+    @State private var isOpening = false
     @State private var error: String?
-    @State private var selectedEntry: DirectoryEntry?
-    @State private var showingAdapterPicker = false
     @State private var workspaceConfigured = false
 
     var body: some View {
@@ -41,11 +42,9 @@ struct WorkspaceBrowserView: View {
                     Button("Cancel") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showingAdapterPicker) {
-                if let entry = selectedEntry {
-                    AdapterPickerSheet(entry: entry) { adapter in
-                        openProject(entry, adapter: adapter)
-                    }
+            .overlay {
+                if isOpening {
+                    openingOverlay
                 }
             }
         }
@@ -58,7 +57,6 @@ struct WorkspaceBrowserView: View {
 
     private var directoryList: some View {
         VStack(spacing: 0) {
-            // Breadcrumb bar
             if !breadcrumbs.isEmpty {
                 breadcrumbBar
             }
@@ -67,7 +65,6 @@ struct WorkspaceBrowserView: View {
                 emptyDirectory
             } else {
                 List {
-                    // Projects first, then plain directories
                     let projects = entries.filter(\.isProject)
                     let dirs = entries.filter { !$0.isProject }
 
@@ -75,8 +72,7 @@ struct WorkspaceBrowserView: View {
                         Section {
                             ForEach(projects) { entry in
                                 ProjectRow(entry: entry) {
-                                    selectedEntry = entry
-                                    showingAdapterPicker = true
+                                    openProject(entry)
                                 } onNavigate: {
                                     navigateInto(entry)
                                 }
@@ -144,6 +140,27 @@ struct WorkspaceBrowserView: View {
             .padding(.vertical, PlexusSpacing.sm)
         }
         .background(PlexusColors.surfaceAdaptive)
+    }
+
+    // MARK: - Opening overlay
+
+    private var openingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+
+            VStack(spacing: PlexusSpacing.lg) {
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(.white)
+                Text("Starting session...")
+                    .font(PlexusTypography.body(16, weight: .medium))
+                    .foregroundStyle(.white)
+            }
+            .padding(PlexusSpacing.xxl)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: PlexusRadius.lg, style: .continuous))
+        }
     }
 
     // MARK: - States
@@ -241,7 +258,6 @@ struct WorkspaceBrowserView: View {
             entries = response.entries
             currentPath = response.path
 
-            // Build breadcrumbs relative to root
             if response.path == response.root || response.path.isEmpty {
                 breadcrumbs = []
             } else {
@@ -264,16 +280,24 @@ struct WorkspaceBrowserView: View {
         }
     }
 
-    private func openProject(_ entry: DirectoryEntry, adapter: String) {
+    private func openProject(_ entry: DirectoryEntry) {
+        guard !isOpening else { return }
+        isOpening = true
+
         Task {
             do {
-                _ = try await connection.workspaceOpen(
+                let session = try await connection.workspaceOpen(
                     path: entry.path,
-                    adapter: adapter,
+                    adapter: "claude-code",
                     name: entry.name
                 )
                 dismiss()
+                // Small delay so the sheet dismissal animation completes
+                // before triggering navigation.
+                try? await Task.sleep(for: .milliseconds(300))
+                onSessionCreated?(session.id)
             } catch {
+                isOpening = false
                 self.error = error.localizedDescription
             }
         }
@@ -395,91 +419,5 @@ private struct DirectoryRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Adapter Picker Sheet
-
-struct AdapterPickerSheet: View {
-    let entry: DirectoryEntry
-    let onSelect: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    private let adapters: [(id: String, name: String, icon: String, description: String)] = [
-        ("claude-code", "Claude Code", "terminal", "Anthropic's coding agent"),
-        ("codex", "Codex", "text.cursor", "OpenAI's coding agent"),
-        ("openai", "OpenAI Chat", "brain", "GPT models via API"),
-    ]
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    HStack(spacing: PlexusSpacing.md) {
-                        Image(systemName: "folder.fill")
-                            .foregroundStyle(PlexusColors.accent)
-                        Text(entry.name)
-                            .font(PlexusTypography.body(16, weight: .semibold))
-                            .foregroundStyle(PlexusColors.textPrimary)
-                    }
-                    .listRowBackground(PlexusColors.surfaceAdaptive)
-                } header: {
-                    Text("Project")
-                        .font(PlexusTypography.caption(12, weight: .medium))
-                }
-
-                Section {
-                    ForEach(adapters, id: \.id) { adapter in
-                        Button {
-                            dismiss()
-                            onSelect(adapter.id)
-                        } label: {
-                            HStack(spacing: PlexusSpacing.md) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: PlexusRadius.sm, style: .continuous)
-                                        .fill(PlexusColors.accent.opacity(0.1))
-                                        .frame(width: 40, height: 40)
-
-                                    Image(systemName: adapter.icon)
-                                        .font(.system(size: 17, weight: .medium))
-                                        .foregroundStyle(PlexusColors.accent)
-                                }
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(adapter.name)
-                                        .font(PlexusTypography.body(16, weight: .medium))
-                                        .foregroundStyle(PlexusColors.textPrimary)
-
-                                    Text(adapter.description)
-                                        .font(PlexusTypography.caption(13))
-                                        .foregroundStyle(PlexusColors.textSecondary)
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "arrow.right.circle")
-                                    .font(.system(size: 20))
-                                    .foregroundStyle(PlexusColors.accent.opacity(0.6))
-                            }
-                            .padding(.vertical, 4)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                } header: {
-                    Text("Open with")
-                        .font(PlexusTypography.caption(12, weight: .medium))
-                }
-            }
-            .navigationTitle("Open Project")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
     }
 }

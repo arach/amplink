@@ -12,6 +12,7 @@ struct TimelineView: View {
     @Environment(ConnectionManager.self) private var connection
 
     @State private var shouldAutoScroll = true
+    @State private var showingSettings = false
     @Namespace private var bottomAnchor
 
     private var sessionState: SessionState? {
@@ -88,9 +89,22 @@ struct TimelineView: View {
             ToolbarItem(placement: .principal) {
                 titleView
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    showingSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 15))
+                        .foregroundStyle(PlexusColors.textSecondary)
+                }
                 connectionIndicator
             }
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+                .environment(connection)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
 

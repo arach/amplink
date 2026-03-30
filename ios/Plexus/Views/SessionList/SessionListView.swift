@@ -10,7 +10,9 @@ struct SessionListView: View {
     @Environment(ConnectionManager.self) private var connection
 
     @State private var showingNewSession = false
+    @State private var showingSettings = false
     @State private var isRefreshing = false
+    @State private var navigateToSession: String?
 
     private var sortedSummaries: [SessionSummary] {
         store.summaries.sorted { $0.lastActivityAt > $1.lastActivityAt }
@@ -35,12 +37,25 @@ struct SessionListView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     connectionStatusButton
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    settingsButton
                     newSessionButton
                 }
             }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+                    .environment(connection)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
             .sheet(isPresented: $showingNewSession) {
-                WorkspaceBrowserView()
+                WorkspaceBrowserView { sessionId in
+                    // Auto-navigate to the newly created session
+                    navigateToSession = sessionId
+                }
+            }
+            .navigationDestination(item: $navigateToSession) { sessionId in
+                TimelineView(sessionId: sessionId)
             }
         }
     }
@@ -168,6 +183,19 @@ struct SessionListView: View {
         case .disconnected: "Disconnected"
         case .failed: "Connection Failed"
         }
+    }
+
+    // MARK: - Settings
+
+    private var settingsButton: some View {
+        Button {
+            showingSettings = true
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 17))
+                .foregroundStyle(PlexusColors.textSecondary)
+        }
+        .accessibilityLabel("Settings")
     }
 
     // MARK: - New Session
