@@ -27,6 +27,7 @@ struct ComposerView: View {
 
     @State private var text = ""
     @State private var showTextInput = false
+    @State private var showDiscovery = false
     @FocusState private var isFocused: Bool
 
     // Voice engine
@@ -77,6 +78,11 @@ struct ComposerView: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isRecording)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isTranscribing)
         .accessibilityElement(children: .contain)
+        .sheet(isPresented: $showDiscovery) {
+            SessionDiscoveryView()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
         .task {
             await voice.prepare()
         }
@@ -158,12 +164,13 @@ struct ComposerView: View {
             .transition(.scale.combined(with: .opacity))
             .accessibilityLabel("Cancel recording")
         } else {
-            BottomCircleButton(icon: "paperclip.circle", isActive: false) {
-                // Attachment action (placeholder for now)
+            BottomCircleButton(icon: "sparkle.magnifyingglass", isActive: showDiscovery) {
                 let impact = UIImpactFeedbackGenerator(style: .light)
                 impact.impactOccurred()
+                showDiscovery = true
             }
-            .accessibilityLabel("Attach file")
+            .accessibilityLabel("Browse sessions")
+            .accessibilityHint("Search past agent sessions")
         }
     }
 

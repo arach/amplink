@@ -13,6 +13,7 @@
 
 import { Bridge } from "./bridge.ts";
 import { startBridgeServer } from "./server.ts";
+import { startFileServer, type FileServer } from "./fileserver.ts";
 import { connectToRelay } from "./relay-client.ts";
 import { resolveConfig, CONFIG_FILE } from "./config.ts";
 import type { AdapterEntry } from "./config.ts";
@@ -107,6 +108,12 @@ if (config.relay) {
 }
 
 // ---------------------------------------------------------------------------
+// File server (independent HTTP — survives independently of bridge/relay)
+// ---------------------------------------------------------------------------
+
+const fileServer = startFileServer({ port: config.port + 2 });
+
+// ---------------------------------------------------------------------------
 // Pair-only mode: if --pair is set without --relay, we can't pair (need relay).
 // If --pair + --relay, we've already shown the QR — just keep the process alive.
 // ---------------------------------------------------------------------------
@@ -160,6 +167,7 @@ function printBanner(): void {
   console.log(`  mode     : ${mode}`);
   console.log(`  encrypt  : ${encryption}${config.relay ? " + Noise (relay)" : ""}`);
   console.log(`  adapters : ${adapterNames.join(", ")}`);
+  console.log(`  files    : http://localhost:${config.port + 2}/`);
   if (config.relay) {
     console.log(`  relay    : ${config.relay}`);
   }
@@ -173,6 +181,7 @@ function printBanner(): void {
 
 async function shutdown(): Promise<void> {
   console.log("\n[bridge] shutting down...");
+  fileServer.stop();
   relayConnection?.disconnect();
   await bridge.shutdown();
   server.stop();

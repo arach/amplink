@@ -684,3 +684,5 @@ function detectAgent(filePath: string): string {
   if (filePath.includes(".aider") || filePath.includes("aider")) return "aider";
   return "unknown";
 }
+
+// HTTP file serving has moved to fileserver.ts — independent start/stop lifecycle.

@@ -12,6 +12,7 @@ struct SessionListView: View {
     @State private var showingNewSession = false
     @State private var showingSettings = false
     @State private var showingHistory = false
+    @State private var showingDiscovery = false
     @State private var isRefreshing = false
     @State private var navigateToSession: String?
 
@@ -39,10 +40,16 @@ struct SessionListView: View {
                     connectionStatusButton
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    discoveryButton
                     historyButton
                     settingsButton
                     newSessionButton
                 }
+            }
+            .sheet(isPresented: $showingDiscovery) {
+                SessionDiscoveryView()
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showingHistory) {
                 SessionHistoryView()
@@ -190,6 +197,20 @@ struct SessionListView: View {
         case .disconnected: "Disconnected"
         case .failed: "Connection Failed"
         }
+    }
+
+    // MARK: - Discovery
+
+    private var discoveryButton: some View {
+        Button {
+            showingDiscovery = true
+        } label: {
+            Image(systemName: "sparkle.magnifyingglass")
+                .font(.system(size: 16))
+                .foregroundStyle(isConnected ? PlexusColors.accent : PlexusColors.textMuted)
+        }
+        .disabled(!isConnected)
+        .accessibilityLabel("Browse past sessions")
     }
 
     // MARK: - History

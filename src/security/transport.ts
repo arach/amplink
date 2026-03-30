@@ -6,9 +6,14 @@
 //   3. Handshake messages exchange automatically
 //   4. Once complete, all subsequent messages are encrypted/decrypted transparently
 //
-// Wire format (JSON envelopes):
-//   Handshake phase:  { phase: "handshake", payload: "<base64>" }
-//   Transport phase:  { phase: "transport", payload: "<base64>" }
+// Wire format:
+//   Binary frames with a 1-byte tag prefix:
+//     0x01 + payload → handshake message
+//     0x02 + payload → transport (encrypted application data)
+//
+//   Legacy JSON format is still accepted on receive for backward compat:
+//     { phase: "handshake", payload: "<base64>" }
+//     { phase: "transport", payload: "<base64>" }
 
 import {
   NoiseHandshake,
@@ -23,6 +28,11 @@ import { saveTrustedPeer, bytesToHex } from "./identity.ts";
 // Types
 // ---------------------------------------------------------------------------
 
+// Binary wire tags
+const TAG_HANDSHAKE = 0x01;
+const TAG_TRANSPORT = 0x02;
+
+// Legacy JSON format (accepted on receive for backward compat)
 interface WireMessage {
   phase: "handshake" | "transport";
   payload: string; // base64
@@ -81,9 +91,22 @@ export class SecureTransport {
   /** Feed an incoming WebSocket message into the transport. */
   receive(raw: string | Uint8Array): void {
     try {
-      const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
-      const wire: WireMessage = JSON.parse(text);
+      // Binary frame: 1-byte tag + payload
+      if (typeof raw !== "string") {
+        const bytes = raw instanceof Uint8Array ? raw : new Uint8Array(raw as ArrayBuffer);
+        if (bytes.length < 2) return;
+        const tag = bytes[0];
+        const payload = bytes.subarray(1);
+        if (tag === TAG_HANDSHAKE) {
+          this.handleHandshakeMessage(payload);
+        } else if (tag === TAG_TRANSPORT) {
+          this.handleTransportMessage(payload);
+        }
+        return;
+      }
 
+      // Legacy JSON format (backward compat)
+      const wire: WireMessage = JSON.parse(raw);
       if (wire.phase === "handshake") {
         this.handleHandshakeMessage(base64ToBytes(wire.payload));
       } else if (wire.phase === "transport") {
@@ -180,7 +203,12 @@ export class SecureTransport {
 // ---------------------------------------------------------------------------
 
 function bytesToBase64(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
+  // Chunked to avoid stack overflow on large payloads.
+  const chunks: string[] = [];
+  for (let i = 0; i < bytes.length; i += 8192) {
+    chunks.push(String.fromCharCode(...bytes.subarray(i, i + 8192)));
+  }
+  return btoa(chunks.join(""));
 }
 
 function base64ToBytes(base64: string): Uint8Array {

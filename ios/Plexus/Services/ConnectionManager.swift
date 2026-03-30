@@ -116,6 +116,24 @@ final class ConnectionManager: @unchecked Sendable {
         }
     }
 
+    // MARK: Derived
+
+    /// Best-effort bridge host for direct HTTP access (e.g., spectator, file server).
+    /// Extracted from the relay URL — works when relay runs on the bridge machine.
+    var bridgeHost: String? {
+        guard let info = connectionInfo,
+              let components = URLComponents(string: info.relayURL),
+              let host = components.host else { return nil }
+        return host
+    }
+
+    /// File server HTTP port (bridge port + 2, default 7890).
+    var bridgePort: Int? {
+        // File server runs on bridge port + 2 (7889 is relay).
+        // TODO: include file server port in bridge/status response
+        return 7890
+    }
+
     // MARK: Dependencies
 
     private let sessionStore: SessionStore
@@ -465,6 +483,26 @@ final class ConnectionManager: @unchecked Sendable {
         let params = WorkspaceOpenParams(path: path, adapter: adapter, name: name)
         let data = try await sendRPC(method: "workspace/open", params: params)
         return try decodeResult(Session.self, from: data)
+    }
+
+    // MARK: - History RPC methods
+
+    func historyDiscover(maxAge: Int = 14, limit: Int = 100) async throws -> HistoryDiscoverResponse {
+        let params = HistoryDiscoverParams(maxAge: maxAge, limit: limit)
+        let data = try await sendRPC(method: "history/discover", params: params)
+        return try decodeResult(HistoryDiscoverResponse.self, from: data)
+    }
+
+    func historySearch(query: String, maxAge: Int = 14, limit: Int = 20) async throws -> HistorySearchResponse {
+        let params = HistorySearchParams(query: query, maxAge: maxAge, limit: limit)
+        let data = try await sendRPC(method: "history/search", params: params)
+        return try decodeResult(HistorySearchResponse.self, from: data)
+    }
+
+    func historyRead(path: String) async throws -> HistoryReadResponse {
+        let params = HistoryReadParams(path: path)
+        let data = try await sendRPC(method: "history/read", params: params)
+        return try decodeResult(HistoryReadResponse.self, from: data)
     }
 
     // MARK: - Private: Connection
