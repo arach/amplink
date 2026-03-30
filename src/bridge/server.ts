@@ -11,7 +11,8 @@
 //   Inbound (phone -> bridge):  JSON-RPC requests
 //   Outbound (bridge -> phone): Plexus events + JSON-RPC responses (wrapped as { seq, event })
 
-import { readdirSync, realpathSync, statSync } from "fs";
+import { readdirSync, readFileSync, realpathSync, statSync } from "fs";
+import { execSync } from "child_process";
 import { basename, isAbsolute, join, relative } from "path";
 import { homedir } from "os";
 import type { Bridge } from "./bridge.ts";
@@ -387,6 +388,83 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
         return { id: req.id, result: session };
       }
 
+      // -- Session History Discovery ------------------------------------------
+
+      case "history/discover": {
+        const p = req.params as { maxAge?: number; limit?: number } | null;
+        const maxAgeDays = p?.maxAge ?? 14;
+        const limit = p?.limit ?? 100;
+        console.log(`[rpc] history/discover maxAge=${maxAgeDays}d limit=${limit}`);
+
+        const sessions = await discoverSessionFiles(maxAgeDays, limit);
+        return { id: req.id, result: { sessions } };
+      }
+
+      case "history/search": {
+        const p = req.params as { query: string; maxAge?: number; limit?: number };
+        console.log(`[rpc] history/search query="${p.query}" maxAge=${p.maxAge ?? 14}d`);
+
+        const maxAge = p.maxAge ?? 14;
+        const limit = p.limit ?? 20;
+
+        // Search across all discovered JSONL files using grep
+        const sessions = await discoverSessionFiles(maxAge, 200);
+        const matches: Array<{
+          path: string;
+          project: string;
+          agent: string;
+          matchCount: number;
+          preview: string[];
+        }> = [];
+
+        for (const session of sessions) {
+          try {
+            const cmd = `grep -i -c "${p.query.replace(/"/g, '\\"')}" "${session.path}" 2>/dev/null`;
+            const countStr = execSync(cmd, { encoding: "utf-8", timeout: 2000 }).trim();
+            const count = parseInt(countStr, 10);
+            if (count > 0) {
+              // Get a few matching lines for preview
+              const previewCmd = `grep -i -m 3 "${p.query.replace(/"/g, '\\"')}" "${session.path}" 2>/dev/null`;
+              const previewLines = execSync(previewCmd, { encoding: "utf-8", timeout: 2000 })
+                .trim()
+                .split("\n")
+                .slice(0, 3);
+
+              matches.push({
+                path: session.path,
+                project: session.project,
+                agent: session.agent,
+                matchCount: count,
+                preview: previewLines,
+              });
+            }
+          } catch {}
+        }
+
+        matches.sort((a, b) => b.matchCount - a.matchCount);
+        return { id: req.id, result: { query: p.query, matches: matches.slice(0, limit) } };
+      }
+
+      case "history/read": {
+        const p = req.params as { path: string };
+        console.log(`[rpc] history/read path=${p.path}`);
+
+        // Safety: only allow reading .jsonl files
+        if (!p.path.endsWith(".jsonl")) {
+          return { id: req.id, error: { code: -32000, message: "Only .jsonl files can be read" } };
+        }
+
+        try {
+          const content = readFileSync(p.path, "utf-8");
+          const lines = content.split("\n").filter((l) => l.trim().length > 0);
+          // Return raw lines (phone parses them) — limit to last 500 lines for large files
+          const trimmed = lines.length > 500 ? lines.slice(-500) : lines;
+          return { id: req.id, result: { path: p.path, lineCount: lines.length, lines: trimmed } };
+        } catch (err: any) {
+          return { id: req.id, error: { code: -32000, message: `Cannot read file: ${err.message}` } };
+        }
+      }
+
       default:
         return { id: req.id, error: { code: -32601, message: `Unknown method: ${req.method}` } };
     }
@@ -479,4 +557,130 @@ function listDirectories(dirPath: string): DirectoryEntry[] {
   }
 
   return entries.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ---------------------------------------------------------------------------
+// Session history discovery
+// ---------------------------------------------------------------------------
+
+interface DiscoveredSession {
+  path: string;
+  project: string;
+  agent: string;       // "claude-code" | "codex" | "aider" | "unknown"
+  modifiedAt: number;  // epoch ms
+  sizeBytes: number;
+  lineCount: number;   // approximate, from wc -l
+}
+
+/**
+ * Discover JSONL session files across known agent log locations.
+ * Uses fast POSIX commands (find + stat) — no deep parsing.
+ */
+async function discoverSessionFiles(maxAgeDays: number, limit: number): Promise<DiscoveredSession[]> {
+  const home = homedir();
+  const results: DiscoveredSession[] = [];
+
+  // Known locations for agent session logs
+  const searchPaths = [
+    // Claude Code: ~/.claude/projects/*/*.jsonl
+    { pattern: `${home}/.claude/projects`, agent: "claude-code" },
+    // Codex: check common locations
+    { pattern: `${home}/.codex`, agent: "codex" },
+    { pattern: `${home}/.openai-codex`, agent: "codex" },
+  ];
+
+  for (const { pattern, agent } of searchPaths) {
+    try {
+      statSync(pattern); // Check dir exists
+    } catch {
+      continue;
+    }
+
+    try {
+      // Find .jsonl files modified within maxAgeDays
+      const cmd = `find "${pattern}" -name "*.jsonl" -mtime -${maxAgeDays} -type f 2>/dev/null`;
+      const output = execSync(cmd, { encoding: "utf-8", timeout: 5000 }).trim();
+      if (!output) continue;
+
+      for (const filePath of output.split("\n")) {
+        if (!filePath.trim()) continue;
+        try {
+          const stat = statSync(filePath);
+          // Extract project name from path
+          // e.g., ~/.claude/projects/-Users-arach-dev-plexus/abc123.jsonl → plexus
+          const project = extractProjectName(filePath);
+
+          // Fast line count
+          let lineCount = 0;
+          try {
+            const wcOutput = execSync(`wc -l < "${filePath}"`, { encoding: "utf-8", timeout: 2000 });
+            lineCount = parseInt(wcOutput.trim(), 10) || 0;
+          } catch {}
+
+          results.push({
+            path: filePath,
+            project,
+            agent,
+            modifiedAt: stat.mtimeMs,
+            sizeBytes: stat.size,
+            lineCount,
+          });
+        } catch {
+          continue;
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  // Also scan workspace root for any .jsonl files in project dirs
+  const config = resolveConfig();
+  if (config.workspace?.root) {
+    try {
+      const root = resolveWorkspaceRoot(config.workspace.root);
+      const cmd = `find "${root}" -maxdepth 4 -name "*.jsonl" -mtime -${maxAgeDays} -type f 2>/dev/null | head -${limit}`;
+      const output = execSync(cmd, { encoding: "utf-8", timeout: 10000 }).trim();
+      if (output) {
+        for (const filePath of output.split("\n")) {
+          if (!filePath.trim()) continue;
+          // Skip if already found
+          if (results.some(r => r.path === filePath)) continue;
+          try {
+            const stat = statSync(filePath);
+            const project = extractProjectName(filePath);
+            results.push({
+              path: filePath,
+              project,
+              agent: detectAgent(filePath),
+              modifiedAt: stat.mtimeMs,
+              sizeBytes: stat.size,
+              lineCount: 0,
+            });
+          } catch {}
+        }
+      }
+    } catch {}
+  }
+
+  // Sort by most recently modified, limit
+  results.sort((a, b) => b.modifiedAt - a.modifiedAt);
+  return results.slice(0, limit);
+}
+
+function extractProjectName(filePath: string): string {
+  // Claude Code pattern: ~/.claude/projects/-Users-arach-dev-PROJECT/...
+  const claudeMatch = filePath.match(/\.claude\/projects\/[^/]*-dev-([^/]+)/);
+  if (claudeMatch?.[1]) return claudeMatch[1];
+
+  // Generic: use parent directory name
+  const parts = filePath.split("/");
+  return parts[parts.length - 2] || "unknown";
+}
+
+function detectAgent(filePath: string): string {
+  if (filePath.includes(".claude")) return "claude-code";
+  if (filePath.includes(".codex") || filePath.includes("codex")) return "codex";
+  if (filePath.includes(".aider") || filePath.includes("aider")) return "aider";
+  return "unknown";
 }

@@ -85,6 +85,20 @@ struct TimelineView: View {
         .background(PlexusColors.backgroundAdaptive)
         .navigationTitle(session?.name ?? "Session")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            // Fetch a fresh snapshot for this session on appear.
+            // Recovery may have already loaded it, but if we navigated
+            // here before recovery finished, or the bridge has newer state,
+            // this ensures we have the latest turns.
+            guard connection.state == .connected else { return }
+            do {
+                let snapshot = try await connection.getSnapshot(sessionId)
+                store.applySnapshot(snapshot)
+                PlexusLog.session.info("Loaded snapshot for \(sessionId): \(snapshot.turns.count) turns")
+            } catch {
+                PlexusLog.session.warning("Failed to load snapshot for \(sessionId): \(error.localizedDescription)")
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .principal) {
                 titleView
@@ -130,6 +144,13 @@ struct TimelineView: View {
                 }
                 .padding(.top, PlexusSpacing.sm)
                 .padding(.bottom, PlexusSpacing.md)
+            }
+            .refreshable {
+                guard connection.state == .connected else { return }
+                if let snapshot = try? await connection.getSnapshot(sessionId) {
+                    store.applySnapshot(snapshot)
+                    PlexusLog.session.info("Refreshed snapshot: \(snapshot.turns.count) turns")
+                }
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: turns.last?.blocks.count) { _, _ in

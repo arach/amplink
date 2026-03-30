@@ -11,6 +11,7 @@ struct SessionListView: View {
 
     @State private var showingNewSession = false
     @State private var showingSettings = false
+    @State private var showingHistory = false
     @State private var isRefreshing = false
     @State private var navigateToSession: String?
 
@@ -38,9 +39,15 @@ struct SessionListView: View {
                     connectionStatusButton
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    historyButton
                     settingsButton
                     newSessionButton
                 }
+            }
+            .sheet(isPresented: $showingHistory) {
+                SessionHistoryView()
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
@@ -183,6 +190,19 @@ struct SessionListView: View {
         case .disconnected: "Disconnected"
         case .failed: "Connection Failed"
         }
+    }
+
+    // MARK: - History
+
+    private var historyButton: some View {
+        Button {
+            showingHistory = true
+        } label: {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.system(size: 16))
+                .foregroundStyle(PlexusColors.textSecondary)
+        }
+        .accessibilityLabel("Session history")
     }
 
     // MARK: - Settings

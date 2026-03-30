@@ -20,6 +20,7 @@ struct WorkspaceBrowserView: View {
     @State private var isOpening = false
     @State private var error: String?
     @State private var workspaceConfigured = false
+    @State private var selectedProject: DirectoryEntry?
 
     var body: some View {
         NavigationStack {
@@ -47,6 +48,14 @@ struct WorkspaceBrowserView: View {
                     openingOverlay
                 }
             }
+            .sheet(item: $selectedProject) { project in
+                HarnessPickerView(
+                    projectName: project.name,
+                    projectPath: project.path
+                ) { harness in
+                    openProject(project, harness: harness)
+                }
+            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
@@ -72,7 +81,7 @@ struct WorkspaceBrowserView: View {
                         Section {
                             ForEach(projects) { entry in
                                 ProjectRow(entry: entry) {
-                                    openProject(entry)
+                                    selectedProject = entry
                                 } onNavigate: {
                                     navigateInto(entry)
                                 }
@@ -280,20 +289,20 @@ struct WorkspaceBrowserView: View {
         }
     }
 
-    private func openProject(_ entry: DirectoryEntry) {
+    private func openProject(_ entry: DirectoryEntry, harness: Harness? = nil) {
         guard !isOpening else { return }
         isOpening = true
+
+        let adapter = harness?.id ?? "claude-code"
 
         Task {
             do {
                 let session = try await connection.workspaceOpen(
                     path: entry.path,
-                    adapter: "claude-code",
+                    adapter: adapter,
                     name: entry.name
                 )
                 dismiss()
-                // Small delay so the sheet dismissal animation completes
-                // before triggering navigation.
                 try? await Task.sleep(for: .milliseconds(300))
                 onSessionCreated?(session.id)
             } catch {

@@ -85,6 +85,7 @@ final class SessionStore: @unchecked Sendable {
         lock.unlock()
 
         rebuildSummaries()
+        SessionCache.shared.save(snapshot)
         Self.logger.notice("Applied snapshot for session \(snapshot.session.id)")
     }
 
@@ -275,6 +276,10 @@ final class SessionStore: @unchecked Sendable {
 
         sessions[sessionId] = state
         lock.unlock()
+
+        // Persist to local cache after each completed turn
+        SessionCache.shared.save(state)
+
     }
 
     private func handleTurnError(sessionId: String, turnId: String, message: String) {

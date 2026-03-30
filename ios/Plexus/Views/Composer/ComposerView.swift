@@ -216,19 +216,10 @@ struct ComposerView: View {
             Divider()
                 .background(PlexusColors.divider)
 
+            // Text display + action buttons
             HStack(alignment: .bottom, spacing: PlexusSpacing.sm) {
-                // Multi-line text field
-                TextField("Ask anything...", text: $text, axis: .vertical)
-                    .font(PlexusTypography.body(15))
-                    .foregroundStyle(PlexusColors.textPrimary)
-                    .lineLimit(1...6)
-                    .focused($isFocused)
-                    .textFieldStyle(.plain)
-                    .disabled(!isConnected)
-                    .opacity(isConnected ? 1.0 : 0.5)
-                    .onSubmit { sendIfPossible() }
-                    .accessibilityLabel("Message input")
-                    .accessibilityHint("Type a message to send")
+                // Text display area (no native keyboard)
+                textDisplay
 
                 // Send / interrupt buttons
                 HStack(spacing: PlexusSpacing.xs) {
@@ -267,8 +258,51 @@ struct ComposerView: View {
             }
             .padding(.horizontal, PlexusSpacing.lg)
             .padding(.vertical, PlexusSpacing.md)
+
+            // Custom UIKit keyboard (ported from Talkie's CompactKeyboardView)
+            PlexusKeyboardView(
+                text: $text,
+                dictationState: keyboardDictationState,
+                onInsert: { char in text.append(char) },
+                onDelete: {
+                    if !text.isEmpty { text.removeLast() }
+                },
+                onReturn: { sendIfPossible() },
+                onVoice: { handleMicTap() },
+                onDismiss: {
+                    withAnimation {
+                        showTextInput = false
+                    }
+                }
+            )
         }
         .background(PlexusColors.backgroundAdaptive)
+    }
+
+    /// Text display that doesn't trigger native keyboard.
+    private var textDisplay: some View {
+        Group {
+            if text.isEmpty {
+                Text("Ask anything...")
+                    .font(PlexusTypography.body(15))
+                    .foregroundStyle(PlexusColors.textMuted)
+                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            } else {
+                Text(text)
+                    .font(PlexusTypography.body(15))
+                    .foregroundStyle(PlexusColors.textPrimary)
+                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                    .lineLimit(1...6)
+            }
+        }
+        .opacity(isConnected ? 1.0 : 0.5)
+        .accessibilityLabel("Message input")
+    }
+
+    private var keyboardDictationState: DictationState {
+        if isRecording { return .recording }
+        if isTranscribing { return .processing }
+        return .idle
     }
 
     // MARK: - Mic State
