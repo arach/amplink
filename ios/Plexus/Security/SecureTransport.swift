@@ -258,6 +258,9 @@ final class SecureTransport: SecureTransportProtocol, @unchecked Sendable {
                             continuation.yield(message)
                         } catch {
                             self.onError?(error)
+                            // Decryption failure = stale session (bridge restarted).
+                            // Break to trigger reconnect with fresh handshake.
+                            break
                         }
 
                     case .handshake:

@@ -155,7 +155,7 @@ final class ConnectionManager: @unchecked Sendable {
         category: "ConnectionManager"
     )
 
-    private static let rpcTimeout: TimeInterval = 30
+    private static let rpcTimeout: TimeInterval = 10
     private static let maxReconnectAttempts = 3
     private static let maxBackoff: TimeInterval = 30
 
@@ -329,9 +329,9 @@ final class ConnectionManager: @unchecked Sendable {
             }
         }
 
-        // Exhausted all attempts — clear trusted bridge and signal failure.
-        Self.logger.error("All reconnect attempts exhausted, clearing trusted bridge")
-        clearTrustedBridge()
+        // Exhausted all attempts — keep trust (bridge is just offline), signal failure.
+        Self.logger.error("All reconnect attempts exhausted — bridge appears offline")
+        setState(.failed(ConnectionError.reconnectExhausted))
     }
 
     /// Resolve the bridge's current room ID via the relay's POST /resolve endpoint.
@@ -485,10 +485,18 @@ final class ConnectionManager: @unchecked Sendable {
         return try decodeResult(Session.self, from: data)
     }
 
+    // MARK: - Session Resume
+
+    func resumeSession(sessionPath: String, adapterType: String? = nil, name: String? = nil) async throws -> Session {
+        let params = SessionResumeParams(sessionPath: sessionPath, adapterType: adapterType, name: name)
+        let data = try await sendRPC(method: "session/resume", params: params)
+        return try decodeResult(Session.self, from: data)
+    }
+
     // MARK: - History RPC methods
 
-    func historyDiscover(maxAge: Int = 14, limit: Int = 100) async throws -> HistoryDiscoverResponse {
-        let params = HistoryDiscoverParams(maxAge: maxAge, limit: limit)
+    func historyDiscover(maxAge: Int = 14, limit: Int = 100, project: String? = nil) async throws -> HistoryDiscoverResponse {
+        let params = HistoryDiscoverParams(maxAge: maxAge, limit: limit, project: project)
         let data = try await sendRPC(method: "history/discover", params: params)
         return try decodeResult(HistoryDiscoverResponse.self, from: data)
     }
@@ -688,8 +696,10 @@ final class ConnectionManager: @unchecked Sendable {
 
                 let removed = self?.pendingRequests.withLock { $0.removeValue(forKey: request.id) }
                 if removed != nil {
-                    Self.logger.warning("RPC timeout: \(method, privacy: .public) (id: \(request.id, privacy: .public))")
+                    Self.logger.warning("RPC timeout: \(method, privacy: .public) — connection likely stale")
                     continuation.resume(throwing: ConnectionError.rpcTimeout(method: method))
+                    // Stale connection — tear down and reconnect
+                    await self?.handleDisconnect()
                 }
             }
 

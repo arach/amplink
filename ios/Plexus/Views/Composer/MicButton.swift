@@ -154,10 +154,13 @@ struct MicButton: View {
 
     // MARK: - Colors
 
+    // Talkie-style warm red for the mic button — pops against dark backgrounds
+    private static let micColor = Color(red: 1.0, green: 0.23, blue: 0.19) // #FF3B30
+
     private var buttonFillColor: Color {
         switch state {
-        case .idle:         PlexusColors.accent
-        case .recording:    PlexusColors.statusError
+        case .idle:         Self.micColor
+        case .recording:    Self.micColor
         case .transcribing: PlexusColors.statusStreaming
         case .disabled:     PlexusColors.textMuted.opacity(0.3)
         }
@@ -165,8 +168,8 @@ struct MicButton: View {
 
     private var buttonBorderColor: Color {
         switch state {
-        case .idle:         PlexusColors.accent.opacity(0.4)
-        case .recording:    PlexusColors.statusError.opacity(0.4)
+        case .idle:         Self.micColor.opacity(0.4)
+        case .recording:    Self.micColor.opacity(0.6)
         case .transcribing: PlexusColors.statusStreaming.opacity(0.4)
         case .disabled:     PlexusColors.textMuted.opacity(0.15)
         }

@@ -109,6 +109,12 @@ struct WorkspaceOpenParams: Codable, Sendable {
     var name: String?
 }
 
+struct SessionResumeParams: Codable, Sendable {
+    let sessionPath: String
+    var adapterType: String?
+    var name: String?
+}
+
 // MARK: - Type-erased Encodable wrapper
 
 private struct AnyEncodable: Encodable, @unchecked Sendable {

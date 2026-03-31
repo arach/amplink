@@ -43,6 +43,7 @@ struct Turn: Codable, Identifiable, Sendable {
     let startedAt: String
     var endedAt: String?
     var blocks: [Block]
+    var isUserTurn: Bool?
 }
 
 // MARK: - Block
@@ -162,6 +163,7 @@ struct TurnState: Codable, Sendable {
     var blocks: [BlockState]
     let startedAt: Int
     var endedAt: Int?
+    var isUserTurn: Bool?
 }
 
 enum SnapshotBlockStatus: String, Codable, Sendable {

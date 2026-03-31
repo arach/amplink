@@ -10,6 +10,7 @@
 
 import type { Bridge } from "./bridge.ts";
 import { handleRPC } from "./server.ts";
+import { log } from "./log.ts";
 import {
   SecureTransport,
   type SocketLike,
@@ -101,15 +102,16 @@ export function connectToRelay(
         return;
       }
 
-      // Detect if this is a new handshake from a reconnecting phone.
-      // If the current transport is already established (ready) and we
-      // receive a handshake-phase message, tear down the old transport
-      // and create a fresh one for the new client.
-      if (transport?.isReady()) {
+      // Detect if this is a handshake from a (re)connecting phone.
+      // This triggers when:
+      //   1. Transport is ready but phone is reconnecting (new handshake over existing session)
+      //   2. Transport is null after a decrypt failure reset (phone catching up)
+      const needsHandshake = transport?.isReady() || !transport;
+      if (needsHandshake) {
         try {
           const wire = JSON.parse(data as string);
           if (wire.phase === "handshake") {
-            console.log("[relay-client] new handshake detected — phone reconnecting");
+            console.log("[relay-client] handshake detected — setting up fresh transport");
             eventUnsub?.();
             eventUnsub = null;
             transport = null;
@@ -123,7 +125,7 @@ export function connectToRelay(
 
             setupSecureChannel(pattern);
           }
-        } catch { /* not JSON, feed to transport */ }
+        } catch { /* not JSON or binary, feed to transport */ }
       }
 
       if (transport) {
@@ -189,6 +191,10 @@ export function connectToRelay(
 
         onError: (err) => {
           console.error("[relay-client] secure transport error:", err.message);
+          log.error("transport", "decrypt/transport error — resetting for fresh handshake", err.message);
+          eventUnsub?.();
+          eventUnsub = null;
+          transport = null;
         },
 
         onClose: () => {

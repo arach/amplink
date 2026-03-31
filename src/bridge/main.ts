@@ -21,7 +21,10 @@ import { printQRCode } from "./qr.ts";
 import { createAdapter as createClaudeCode } from "../adapters/claude-code.ts";
 import { createAdapter as createOpenAI } from "../adapters/openai-compat.ts";
 import { createAdapter as createCodex } from "../adapters/codex.ts";
+import { createAdapter as createPi } from "../adapters/pi.ts";
+import { createAdapter as createOpenCode } from "../adapters/opencode.ts";
 import { loadOrCreateIdentity, bytesToHex } from "../security/index.ts";
+import { log } from "./log.ts";
 import { homedir } from "os";
 import type { AdapterFactory } from "../protocol/index.ts";
 
@@ -44,6 +47,8 @@ const identity = loadOrCreateIdentity();
 const adapters: Record<string, AdapterFactory> = {
   "claude-code": createClaudeCode,
   "codex": createCodex,
+  "pi": createPi,
+  "opencode": createOpenCode,
   "openai": createOpenAI,
 };
 
@@ -168,6 +173,7 @@ function printBanner(): void {
   console.log(`  encrypt  : ${encryption}${config.relay ? " + Noise (relay)" : ""}`);
   console.log(`  adapters : ${adapterNames.join(", ")}`);
   console.log(`  files    : http://localhost:${config.port + 2}/`);
+  console.log(`  log      : ${log.path}`);
   if (config.relay) {
     console.log(`  relay    : ${config.relay}`);
   }

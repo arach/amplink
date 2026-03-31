@@ -47,9 +47,12 @@ struct SessionListView: View {
                 }
             }
             .sheet(isPresented: $showingDiscovery) {
-                SessionDiscoveryView()
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
+                SessionDiscoveryView(onResumed: { sessionId in
+                    showingDiscovery = false
+                    navigateToSession = sessionId
+                })
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showingHistory) {
                 SessionHistoryView()

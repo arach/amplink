@@ -1,85 +1,82 @@
-// ComposerView — Two-layer input system: action tray + text input.
+// ComposerView — Voice-first input with tap-on/tap-off mic.
 //
-// Ported from Talkie's ActionDock with a key architectural change:
-// the tray is controls only — text input is a separate layer above it.
-//
-// Layer 1 (bottom, always visible): Action Tray
-//   [attachment 48pt] — Spacer — [mic 70pt] — Spacer — [keyboard 48pt]
-//   iOS 26 Liquid Glass (.glassEffect(.regular.interactive()))
-//   Pre-iOS 26: chrome metallic (.ultraThinMaterial + edge highlight)
-//   Push-to-talk overlay + recording indicator within the glass
-//
-// Layer 2 (above tray, toggled): Text Input
-//   Multi-line text field + send/interrupt buttons
-//   Toggled by keyboard button, dismissed back to tray-only
-//
-// Public interface (unchanged for TimelineView):
-//   sessionId, isConnected, isStreaming, onSend, onInterrupt
+// Tray: [discovery] — [mic] — [keyboard]
+// Mic toggles recording. After transcription, editable text field + send.
+// Keyboard only when explicitly toggled.
 
 import SwiftUI
 
 struct ComposerView: View {
     let sessionId: String
+    var projectName: String? = nil
     let isConnected: Bool
     let isStreaming: Bool
     let onSend: (String) -> Void
     let onInterrupt: () -> Void
 
     @State private var text = ""
-    @State private var showTextInput = false
+    @State private var showKeyboard = false
     @State private var showDiscovery = false
-    @FocusState private var isFocused: Bool
 
-    // Voice engine
     @StateObject private var voice = PlexusVoice()
 
-    // Recording state
     @State private var micState: MicButtonState = .idle
-    @State private var isPushToTalk = false
     @State private var lastError: String?
+    @State private var justSent = false
 
-    // Derived
     private var isRecording: Bool { micState == .recording }
     private var isTranscribing: Bool { micState == .transcribing }
+    private var hasText: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    private var canSend: Bool { isConnected && hasText && !isStreaming }
+    private var showMessageField: Bool { hasText || showKeyboard }
 
-    private var canSend: Bool {
-        isConnected
-            && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && !isStreaming
-    }
+    // Keyboard button center = 14 (horizontal pad) + 24 (half of 48pt button) = 38pt from trailing edge
+    private let sendButtonTrailing: CGFloat = 14 + 24 - 16 // 38 - half send button width
 
     var body: some View {
         VStack(spacing: 0) {
-            // Debug: show last error so we can see what's failing on device
             if let lastError {
                 Text(lastError)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(PlexusTypography.caption(12, weight: .medium))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity)
-                    .background(Color.red.opacity(0.85))
+                    .background(PlexusColors.statusError.opacity(0.85))
                     .onTapGesture { self.lastError = nil }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        withAnimation { self.lastError = nil }
+                    }
             }
 
-            // Layer 2: Text Input (above tray, toggled)
-            if showTextInput && !isRecording && !isTranscribing {
-                textInputLayer
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .bottom).combined(with: .opacity),
-                        removal: .move(edge: .bottom).combined(with: .opacity)
-                    ))
+            // Message field — always visible
+            messageField
+
+            // Keyboard (only when explicitly toggled)
+            if showKeyboard && !isRecording && !isTranscribing {
+                PlexusKeyboardView(
+                    text: $text,
+                    dictationState: .idle,
+                    onInsert: { char in text.append(char) },
+                    onDelete: { if !text.isEmpty { text.removeLast() } },
+                    onReturn: { text.append("\n") },
+                    onVoice: { handleMicTap() },
+                    onDismiss: { withAnimation { showKeyboard = false } }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            // Layer 1: Action Tray (always visible at bottom)
+            // Action Tray
             actionTray
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: showTextInput)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isRecording)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isTranscribing)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: showMessageField)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: showKeyboard)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: micState)
         .accessibilityElement(children: .contain)
         .sheet(isPresented: $showDiscovery) {
-            SessionDiscoveryView()
+            SessionDiscoveryView(projectFilter: projectName)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
@@ -88,231 +85,154 @@ struct ComposerView: View {
         }
     }
 
-    // MARK: - Layer 1: Action Tray
+    // MARK: - Action Tray
 
     private var actionTray: some View {
         VStack(spacing: 0) {
-            // Recording indicator overlay (above button row, within the glass)
-            if isRecording || isTranscribing {
-                RecordingIndicator(
-                    phase: isRecording
-                        ? .recording(isPushToTalk: isPushToTalk)
-                        : .transcribing,
-                    duration: voice.recordingDuration,
-                    audioLevels: voice.audioLevels
-                )
-                .padding(.horizontal, PlexusSpacing.lg)
-                .padding(.top, PlexusSpacing.sm)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .bottom).combined(with: .opacity),
-                    removal: .scale(scale: 0.95).combined(with: .opacity)
-                ))
+            HStack(spacing: 0) {
+                leftButton.frame(width: 48, height: 48)
+                Spacer()
+                centerButton
+                Spacer()
+                rightButton.frame(width: 48, height: 48)
             }
-
-            // 3-button HStack: attachment — mic — keyboard
-            buttonRow
-                .padding(.horizontal, PlexusSpacing.lg)
-                .padding(.top, isRecording || isTranscribing ? PlexusSpacing.sm : 18)
-                .padding(.bottom, 20)
+            .padding(.horizontal, 14)
+            .padding(.top, 14)
+            .padding(.bottom, -18)
         }
         .frame(maxWidth: .infinity)
-        .background { trayBackground }
-    }
-
-    // MARK: - Tray Background (Liquid Glass / Chrome Metallic)
-
-    private var trayBackground: some View {
-        Color.clear
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 0))
-            .ignoresSafeArea(edges: .bottom)
-    }
-
-    // MARK: - Button Row
-
-    private var buttonRow: some View {
-        HStack(spacing: 0) {
-            // Left: attachment or cancel
-            leftTrayButton
-                .frame(width: 48, height: 48)
-
-            Spacer()
-
-            // Center: 70pt mic
-            MicButton(
-                state: currentMicState,
-                onTap: handleMicTap,
-                onLongPressStart: handlePushToTalkStart,
-                onLongPressEnd: handlePushToTalkEnd
-            )
-
-            Spacer()
-
-            // Right: keyboard / interrupt
-            rightTrayButton
-                .frame(width: 48, height: 48)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [.white.opacity(0.12), .white.opacity(0.04), .clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(height: 1)
+        }
+        .background {
+            Color.clear
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 0))
+                .ignoresSafeArea(edges: .bottom)
         }
     }
 
-    // MARK: - Left Tray Button
+    // MARK: - Buttons
 
-    @ViewBuilder
-    private var leftTrayButton: some View {
-        if isRecording || isTranscribing {
-            BottomCircleButton(icon: "xmark", isActive: false) {
-                cancelRecording()
-            }
-            .transition(.scale.combined(with: .opacity))
-            .accessibilityLabel("Cancel recording")
-        } else {
-            BottomCircleButton(icon: "sparkle.magnifyingglass", isActive: showDiscovery) {
-                let impact = UIImpactFeedbackGenerator(style: .light)
-                impact.impactOccurred()
-                showDiscovery = true
-            }
-            .accessibilityLabel("Browse sessions")
-            .accessibilityHint("Search past agent sessions")
+    private var leftButton: some View {
+        BottomCircleButton(icon: "sparkle.magnifyingglass", isActive: showDiscovery) {
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
+            showDiscovery = true
         }
+        .accessibilityLabel("Browse sessions")
     }
 
-    // MARK: - Right Tray Button
-
     @ViewBuilder
-    private var rightTrayButton: some View {
-        if isRecording || isTranscribing {
-            // Empty placeholder during recording
-            Color.clear.frame(width: 48, height: 48)
-        } else if isStreaming {
-            // Interrupt button
+    private var centerButton: some View {
+        if isStreaming {
             Button {
                 onInterrupt()
             } label: {
                 Image(systemName: "stop.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(PlexusColors.statusError)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 70, height: 70)
                     .background(PlexusColors.statusError.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(Circle())
             }
             .buttonStyle(.plain)
             .transition(.scale.combined(with: .opacity))
-            .accessibilityLabel("Interrupt")
-            .accessibilityHint("Stop the current response")
         } else {
-            // Keyboard toggle
-            BottomCircleButton(
-                icon: showTextInput ? "keyboard.chevron.compact.down" : "keyboard",
-                isActive: showTextInput
-            ) {
-                withAnimation {
-                    showTextInput.toggle()
-                    if showTextInput {
-                        isFocused = true
-                    } else {
-                        isFocused = false
-                    }
-                }
-            }
-            .accessibilityLabel(showTextInput ? "Hide keyboard" : "Show keyboard")
-        }
-    }
-
-    // MARK: - Layer 2: Text Input
-
-    private var textInputLayer: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(PlexusColors.divider)
-
-            // Text display + action buttons
-            HStack(alignment: .bottom, spacing: PlexusSpacing.sm) {
-                // Text display area (no native keyboard)
-                textDisplay
-
-                // Send / interrupt buttons
-                HStack(spacing: PlexusSpacing.xs) {
-                    if isStreaming {
-                        Button {
-                            onInterrupt()
-                        } label: {
-                            Image(systemName: "stop.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(PlexusColors.statusError)
-                                .frame(width: 36, height: 36)
-                                .background(PlexusColors.statusError.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: PlexusRadius.sm, style: .continuous))
-                        }
-                        .transition(.scale.combined(with: .opacity))
-                        .accessibilityLabel("Interrupt")
-                    }
-
-                    if canSend {
-                        Button {
-                            sendIfPossible()
-                        } label: {
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(width: 36, height: 36)
-                                .background(PlexusColors.accent)
-                                .clipShape(RoundedRectangle(cornerRadius: PlexusRadius.sm, style: .continuous))
-                        }
-                        .transition(.scale.combined(with: .opacity))
-                        .accessibilityLabel("Send message")
-                    }
-                }
-                .animation(.easeInOut(duration: 0.15), value: isStreaming)
-                .animation(.easeInOut(duration: 0.15), value: canSend)
-            }
-            .padding(.horizontal, PlexusSpacing.lg)
-            .padding(.vertical, PlexusSpacing.md)
-
-            // Custom UIKit keyboard (ported from Talkie's CompactKeyboardView)
-            PlexusKeyboardView(
-                text: $text,
-                dictationState: keyboardDictationState,
-                onInsert: { char in text.append(char) },
-                onDelete: {
-                    if !text.isEmpty { text.removeLast() }
-                },
-                onReturn: { sendIfPossible() },
-                onVoice: { handleMicTap() },
-                onDismiss: {
-                    withAnimation {
-                        showTextInput = false
-                    }
-                }
+            MicButton(
+                state: currentMicState,
+                onTap: handleMicTap,
+                onLongPressStart: nil,
+                onLongPressEnd: nil
             )
         }
-        .background(PlexusColors.backgroundAdaptive)
     }
 
-    /// Text display that doesn't trigger native keyboard.
-    private var textDisplay: some View {
-        Group {
-            if text.isEmpty {
-                Text("Ask anything...")
-                    .font(PlexusTypography.body(15))
-                    .foregroundStyle(PlexusColors.textMuted)
-                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-            } else {
-                Text(text)
-                    .font(PlexusTypography.body(15))
-                    .foregroundStyle(PlexusColors.textPrimary)
-                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-                    .lineLimit(1...6)
-            }
+    private var rightButton: some View {
+        BottomCircleButton(
+            icon: showKeyboard ? "keyboard.chevron.compact.down" : "keyboard",
+            isActive: showKeyboard
+        ) {
+            withAnimation { showKeyboard.toggle() }
         }
-        .opacity(isConnected ? 1.0 : 0.5)
-        .accessibilityLabel("Message input")
+        .accessibilityLabel(showKeyboard ? "Hide keyboard" : "Show keyboard")
     }
 
-    private var keyboardDictationState: DictationState {
-        if isRecording { return .recording }
-        if isTranscribing { return .processing }
-        return .idle
+    // MARK: - Message Field (stacked card above action tray)
+
+    // Max height matches the action tray (~100pt)
+    private let messageMaxHeight: CGFloat = 100
+
+    private var messageField: some View {
+        HStack(alignment: .top, spacing: 0) {
+            PlexusTextField(text: $text, placeholder: "Ask anything...", maxHeight: messageMaxHeight - 16)
+                .frame(maxHeight: messageMaxHeight - 16)
+                .padding(.leading, 16)
+                .padding(.trailing, 8)
+                .padding(.top, 2)
+
+            Button {
+                sendIfPossible()
+            } label: {
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(canSend ? PlexusColors.textPrimary : PlexusColors.textSecondary)
+                    .frame(width: 44, height: 44)
+                    .background {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(.clear)
+                            .glassEffect(.regular.interactive())
+                    }
+                    .scaleEffect(justSent ? 0.85 : 1.0)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSend)
+            .padding(.trailing, 14)
+            .accessibilityLabel("Send message")
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity)
+        .background(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 16,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 16,
+                style: .continuous
+            )
+            .fill(PlexusColors.surfaceAdaptive)
+            .overlay(alignment: .top) {
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 16,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: 16,
+                    style: .continuous
+                )
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [.white.opacity(0.15), .clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.5
+                )
+            }
+            .shadow(color: .black.opacity(0.08), radius: 3, y: -1)
+        )
+        .animation(.easeInOut(duration: 0.15), value: canSend)
+        .animation(.spring(response: 0.2, dampingFraction: 0.5), value: justSent)
     }
 
-    // MARK: - Mic State
+    // MARK: - State
 
     private var currentMicState: MicButtonState {
         if isRecording { return .recording }
@@ -330,50 +250,32 @@ struct ComposerView: View {
         impact.impactOccurred()
         onSend(trimmed)
         text = ""
-        showTextInput = false
-        isFocused = false
-    }
+        showKeyboard = false
 
-    // MARK: - Tap-to-Record
-
-    private func handleMicTap() {
-        switch micState {
-        case .idle:
-            isPushToTalk = false
-            startRecording()
-        case .recording:
-            stopRecording()
-        case .transcribing, .disabled:
-            break
+        // Brief scale-bounce on the send button
+        justSent = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(150))
+            justSent = false
         }
     }
 
-    // MARK: - Push-to-Talk
-
-    private func handlePushToTalkStart() {
-        guard micState == .idle else { return }
-        isPushToTalk = true
-        startRecording()
+    private func handleMicTap() {
+        switch micState {
+        case .idle: startRecording()
+        case .recording: stopRecording()
+        case .transcribing, .disabled: break
+        }
     }
-
-    private func handlePushToTalkEnd() {
-        guard micState == .recording, isPushToTalk else { return }
-        stopRecording()
-    }
-
-    // MARK: - Recording Flow
 
     private func startRecording() {
         micState = .recording
-        showTextInput = false
-        isFocused = false
+        showKeyboard = false
         lastError = nil
 
         Task {
             do {
-                if !voice.isReady {
-                    await voice.prepare()
-                }
+                if !voice.isReady { await voice.prepare() }
                 let granted = await voice.requestMicrophonePermission()
                 guard granted else {
                     lastError = "Mic permission denied"
@@ -396,69 +298,25 @@ struct ComposerView: View {
                 let transcribed = try await voice.stopAndTranscribe()
                 text = transcribed
                 micState = .idle
-                isPushToTalk = false
-                showTextInput = true
-                isFocused = true
             } catch PlexusVoice.VoiceError.recordingTooShort {
                 lastError = "Recording too short (min 0.3s)"
                 micState = .idle
-                isPushToTalk = false
             } catch {
                 lastError = "Transcription: \(error.localizedDescription)"
                 micState = .idle
-                isPushToTalk = false
             }
         }
-    }
-
-    private func cancelRecording() {
-        voice.cancelRecording()
-        micState = .idle
-        isPushToTalk = false
     }
 }
 
 // MARK: - Previews
 
-#Preview("Tray Only - Idle") {
+#Preview("Idle") {
     VStack {
         Spacer()
         ComposerView(
-            sessionId: "s1",
-            isConnected: true,
-            isStreaming: false,
-            onSend: { print("Send: \($0)") },
-            onInterrupt: { print("Interrupt") }
-        )
-    }
-    .background(PlexusColors.backgroundAdaptive)
-    .preferredColorScheme(.dark)
-}
-
-#Preview("Tray - Streaming") {
-    VStack {
-        Spacer()
-        ComposerView(
-            sessionId: "s1",
-            isConnected: true,
-            isStreaming: true,
-            onSend: { print("Send: \($0)") },
-            onInterrupt: { print("Interrupt") }
-        )
-    }
-    .background(PlexusColors.backgroundAdaptive)
-    .preferredColorScheme(.dark)
-}
-
-#Preview("Tray - Disconnected") {
-    VStack {
-        Spacer()
-        ComposerView(
-            sessionId: "s1",
-            isConnected: false,
-            isStreaming: false,
-            onSend: { print("Send: \($0)") },
-            onInterrupt: { print("Interrupt") }
+            sessionId: "s1", isConnected: true, isStreaming: false,
+            onSend: { print("Send: \($0)") }, onInterrupt: {}
         )
     }
     .background(PlexusColors.backgroundAdaptive)

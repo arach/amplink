@@ -192,9 +192,16 @@ export class SecureTransport {
       return;
     }
 
-    const plaintext = this.session.decrypt(ciphertext);
-    const message = new TextDecoder().decode(plaintext);
-    this.events.onMessage?.(message);
+    try {
+      const plaintext = this.session.decrypt(ciphertext);
+      const message = new TextDecoder().decode(plaintext);
+      this.events.onMessage?.(message);
+    } catch (err: any) {
+      // Decrypt failure = stale session (peer using old keys after restart).
+      // Signal error + close so the peer reconnects with a fresh handshake.
+      this.events.onError?.(err);
+      this.events.onClose?.();
+    }
   }
 }
 

@@ -14,14 +14,17 @@ struct PlexusApp: App {
     @State private var sessionStore: SessionStore
     @State private var connectionManager: ConnectionManager
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var lastCrash: String?
 
     init() {
+        CrashCatcher.install()
         bootLogger.notice("Plexus app launching")
         let store = SessionStore()
         let manager = ConnectionManager(sessionStore: store)
         bootLogger.notice("hasTrustedBridge=\(manager.hasTrustedBridge, privacy: .public), state=\(String(describing: manager.state), privacy: .public)")
         _sessionStore = State(initialValue: store)
         _connectionManager = State(initialValue: manager)
+        _lastCrash = State(initialValue: CrashCatcher.consumeLastCrash())
     }
 
     var body: some Scene {
@@ -51,6 +54,18 @@ struct PlexusApp: App {
                     PlexusLog.voice.warning("Parakeet preload failed: \(error.localizedDescription)")
                 }
                 #endif
+            }
+            .alert("Crash Report", isPresented: .init(
+                get: { lastCrash != nil },
+                set: { if !$0 { lastCrash = nil } }
+            )) {
+                Button("Copy") {
+                    UIPasteboard.general.string = lastCrash
+                    lastCrash = nil
+                }
+                Button("Dismiss", role: .cancel) { lastCrash = nil }
+            } message: {
+                Text(lastCrash ?? "")
             }
         }
     }

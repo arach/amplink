@@ -9,6 +9,7 @@ import Foundation
 struct HistoryDiscoverParams: Codable, Sendable {
     var maxAge: Int?   // days, default 14
     var limit: Int?    // max results, default 100
+    var project: String? // filter by project name
 }
 
 struct DiscoveredSession: Codable, Identifiable, Sendable {

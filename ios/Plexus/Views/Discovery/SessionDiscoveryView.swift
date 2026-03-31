@@ -2,17 +2,24 @@
 //
 // Groups discovered JSONL sessions by project, sorted by recency.
 // Tapping a session opens it in SpectatorView (WKWebView).
-// Presented as a sheet from the meta-agent button in the action tray.
+// Shows live scanning status with skeleton shimmer during load.
+// Optionally filters to a specific project (e.g., current session context).
 
 import SwiftUI
 
 struct SessionDiscoveryView: View {
+    /// Optional project filter — when set, only shows sessions for this project.
+    var projectFilter: String? = nil
+    /// Called with the new session ID when a session is resumed from spectator.
+    var onResumed: ((String) -> Void)?
+
     @Environment(ConnectionManager.self) private var connection
     @Environment(\.dismiss) private var dismiss
 
     @State private var sessions: [DiscoveredSession] = []
     @State private var isLoading = true
     @State private var error: String?
+    @State private var scanStatus: String = "Connecting to bridge..."
     @State private var selectedSession: DiscoveredSession?
 
     private var groupedByProject: [(project: String, sessions: [DiscoveredSession])] {
@@ -40,7 +47,7 @@ struct SessionDiscoveryView: View {
                 }
             }
             .background(PlexusColors.backgroundAdaptive)
-            .navigationTitle("Sessions")
+            .navigationTitle(projectFilter ?? "Sessions")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -53,7 +60,15 @@ struct SessionDiscoveryView: View {
                 }
             }
             .fullScreenCover(item: $selectedSession) { session in
-                SpectatorView(sessionPath: session.path, sessionName: session.project)
+                SpectatorView(
+                    sessionPath: session.path,
+                    sessionName: session.project,
+                    agentType: session.agent
+                ) { newSessionId in
+                    selectedSession = nil
+                    dismiss()
+                    onResumed?(newSessionId)
+                }
             }
         }
         .task {
@@ -76,7 +91,6 @@ struct SessionDiscoveryView: View {
 
     private func projectSection(_ project: String, sessions: [DiscoveredSession]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Project header
             HStack(spacing: PlexusSpacing.sm) {
                 Image(systemName: agentIcon(for: sessions.first?.agent ?? "unknown"))
                     .font(.system(size: 13, weight: .semibold))
@@ -94,7 +108,6 @@ struct SessionDiscoveryView: View {
             .padding(.horizontal, PlexusSpacing.lg)
             .padding(.vertical, PlexusSpacing.md)
 
-            // Session rows
             ForEach(sessions) { session in
                 sessionRow(session)
             }
@@ -106,13 +119,11 @@ struct SessionDiscoveryView: View {
             selectedSession = session
         } label: {
             HStack(spacing: PlexusSpacing.md) {
-                // File indicator
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .fill(PlexusColors.accent.opacity(0.15))
                     .frame(width: 4, height: 32)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    // Session file name (last path component, trimmed)
                     Text(sessionDisplayName(session.path))
                         .font(PlexusTypography.code(13, weight: .medium))
                         .foregroundStyle(PlexusColors.textPrimary)
@@ -122,11 +133,9 @@ struct SessionDiscoveryView: View {
                         Label(AdapterIcon.displayName(for: session.agent), systemImage: agentIcon(for: session.agent))
                             .font(PlexusTypography.caption(11))
                             .foregroundStyle(PlexusColors.textMuted)
-
                         Text("\(session.lineCount) lines")
                             .font(PlexusTypography.caption(11))
                             .foregroundStyle(PlexusColors.textMuted)
-
                         Text(RelativeTime.string(from: session.modifiedDate))
                             .font(PlexusTypography.caption(11))
                             .foregroundStyle(PlexusColors.textMuted)
@@ -146,19 +155,72 @@ struct SessionDiscoveryView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - States
+    // MARK: - Loading State (skeleton + live status)
 
     private var loadingState: some View {
-        VStack(spacing: PlexusSpacing.lg) {
-            Spacer()
-            ProgressView()
-                .controlSize(.regular)
-            Text("Scanning sessions...")
-                .font(PlexusTypography.body(14))
-                .foregroundStyle(PlexusColors.textMuted)
-            Spacer()
+        VStack(spacing: 0) {
+            // Live status bar
+            HStack(spacing: PlexusSpacing.sm) {
+                BrailleSpinner()
+                Text(scanStatus)
+                    .font(PlexusTypography.code(12, weight: .medium))
+                    .foregroundStyle(PlexusColors.accent)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .padding(.horizontal, PlexusSpacing.lg)
+            .padding(.vertical, PlexusSpacing.md)
+            .background(PlexusColors.accent.opacity(0.06))
+
+            // Skeleton rows with shimmer
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(0..<3, id: \.self) { _ in skeletonSection }
+                }
+                .padding(.top, PlexusSpacing.sm)
+            }
+            .allowsHitTesting(false)
         }
     }
+
+    private var skeletonSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: PlexusSpacing.sm) {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(PlexusColors.textMuted.opacity(0.15))
+                    .frame(width: 14, height: 14)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(PlexusColors.textMuted.opacity(0.12))
+                    .frame(width: 80, height: 12)
+                Spacer()
+            }
+            .padding(.horizontal, PlexusSpacing.lg)
+            .padding(.vertical, PlexusSpacing.md)
+
+            ForEach(0..<3, id: \.self) { idx in
+                HStack(spacing: PlexusSpacing.md) {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(PlexusColors.accent.opacity(0.08))
+                        .frame(width: 4, height: 32)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(PlexusColors.textMuted.opacity(0.12))
+                            .frame(width: [140, 160, 120][idx], height: 12)
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(PlexusColors.textMuted.opacity(0.08))
+                            .frame(width: [180, 200, 170][idx], height: 10)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, PlexusSpacing.lg)
+                .padding(.vertical, PlexusSpacing.md)
+            }
+        }
+        .shimmering()
+    }
+
+    // MARK: - Error / Empty States
 
     private func errorState(_ message: String) -> some View {
         VStack(spacing: PlexusSpacing.lg) {
@@ -189,7 +251,9 @@ struct SessionDiscoveryView: View {
             Text("No sessions found")
                 .font(PlexusTypography.body(16, weight: .medium))
                 .foregroundStyle(PlexusColors.textSecondary)
-            Text("No JSONL session files found in the last 14 days.")
+            Text(projectFilter != nil
+                 ? "No JSONL sessions found for \(projectFilter!) in the last 14 days."
+                 : "No JSONL session files found in the last 14 days.")
                 .font(PlexusTypography.body(14))
                 .foregroundStyle(PlexusColors.textMuted)
                 .multilineTextAlignment(.center)
@@ -198,17 +262,56 @@ struct SessionDiscoveryView: View {
         .padding(.horizontal, PlexusSpacing.xxl)
     }
 
-    // MARK: - Data
+    // MARK: - Data Loading
 
+    /// Scan known locations, updating status as we go.
     private func loadSessions() async {
         isLoading = true
         error = nil
-        do {
-            let response = try await connection.historyDiscover(maxAge: 14, limit: 50)
-            sessions = response.sessions
-        } catch {
-            self.error = "Failed to discover sessions: \(error.localizedDescription)"
+        sessions = []
+
+        let scanDirs = [
+            ("~/.claude/projects", "claude-code"),
+            ("~/.codex", "codex"),
+            ("~/.openai-codex", "codex"),
+        ]
+
+        var allSessions: [DiscoveredSession] = []
+
+        for (dir, _) in scanDirs {
+            scanStatus = "Scanning \(dir)..."
+
+            do {
+                let response = try await connection.historyDiscover(
+                    maxAge: 14, limit: 50, project: projectFilter
+                )
+
+                let existingPaths = Set(allSessions.map(\.path))
+                let newSessions = response.sessions.filter { !existingPaths.contains($0.path) }
+                allSessions.append(contentsOf: newSessions)
+                allSessions.sort { $0.modifiedAt > $1.modifiedAt }
+                sessions = allSessions
+
+                if !newSessions.isEmpty {
+                    let projects = Set(allSessions.map(\.project))
+                    scanStatus = "Found \(allSessions.count) sessions across \(projects.count) projects"
+                }
+
+                // Bridge scans all roots in one call for now — break after first success
+                break
+            } catch {
+                self.error = "Failed to discover sessions: \(error.localizedDescription)"
+                break
+            }
         }
+
+        if allSessions.isEmpty && error == nil {
+            scanStatus = "No sessions found"
+        } else if !allSessions.isEmpty {
+            let projects = Set(allSessions.map(\.project))
+            scanStatus = "⠿ \(allSessions.count) sessions · \(projects.count) projects"
+        }
+
         isLoading = false
     }
 
@@ -216,7 +319,6 @@ struct SessionDiscoveryView: View {
 
     private func sessionDisplayName(_ path: String) -> String {
         let filename = (path as NSString).lastPathComponent
-        // Trim .jsonl extension and truncate long UUIDs
         let name = filename.replacingOccurrences(of: ".jsonl", with: "")
         if name.count > 24 {
             return String(name.prefix(10)) + "..." + String(name.suffix(8))
@@ -231,6 +333,62 @@ struct SessionDiscoveryView: View {
         case "aider": "text.cursor"
         default: "cpu"
         }
+    }
+}
+
+// MARK: - Braille spinner
+
+struct BrailleSpinner: View {
+    private static let frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    @State private var index = 0
+    @State private var timer: Timer?
+
+    var body: some View {
+        Text(Self.frames[index])
+            .font(PlexusTypography.code(14, weight: .bold))
+            .foregroundStyle(PlexusColors.accent)
+            .onAppear {
+                timer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [self] _ in
+                    Task { @MainActor in
+                        index = (index + 1) % Self.frames.count
+                    }
+                }
+            }
+            .onDisappear {
+                timer?.invalidate()
+                timer = nil
+            }
+    }
+}
+
+// MARK: - Shimmer effect for skeleton loading
+
+struct ShimmerModifier: ViewModifier {
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                LinearGradient(
+                    colors: [.clear, .white.opacity(0.08), .white.opacity(0.14), .white.opacity(0.08), .clear],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .offset(x: phase * 350)
+                .allowsHitTesting(false)
+            }
+            .clipped()
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+extension View {
+    func shimmering() -> some View {
+        modifier(ShimmerModifier())
     }
 }
 

@@ -13,6 +13,8 @@ struct TimelineView: View {
 
     @State private var shouldAutoScroll = true
     @State private var showingSettings = false
+    @State private var sendError: String?
+    @Environment(\.dismiss) private var dismiss
     @Namespace private var bottomAnchor
 
     private var sessionState: SessionState? {
@@ -44,7 +46,8 @@ struct TimelineView: View {
                 sessionId: sessionId,
                 status: turnStatus,
                 startedAt: formatter.string(from: startedAtDate),
-                blocks: blocks
+                blocks: blocks,
+                isUserTurn: turnState.isUserTurn
             )
         }
     }
@@ -65,14 +68,62 @@ struct TimelineView: View {
                 timeline
             }
 
+            if let sendError {
+                HStack {
+                    Text(sendError.contains("No session") ? "Session expired" : sendError)
+                        .font(PlexusTypography.caption(12, weight: .medium))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    if sendError.contains("No session") {
+                        Button("Go back") { dismiss() }
+                            .font(PlexusTypography.caption(12, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(PlexusColors.statusError.opacity(0.85))
+                .onTapGesture { self.sendError = nil }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task {
+                    try? await Task.sleep(for: .seconds(5))
+                    withAnimation { self.sendError = nil }
+                }
+            }
+
             ComposerView(
                 sessionId: sessionId,
+                projectName: session?.name,
                 isConnected: isConnected,
                 isStreaming: isStreaming,
                 onSend: { text in
+                    // Show the user's message in the timeline immediately
+                    let turnId = "user-\(UUID().uuidString)"
+                    let userBlock = Block(
+                        id: UUID().uuidString,
+                        turnId: turnId,
+                        type: .text,
+                        status: .completed,
+                        index: 0,
+                        text: text
+                    )
+                    let userTurn = TurnState(
+                        id: turnId,
+                        status: .completed,
+                        blocks: [BlockState(block: userBlock, status: .completed)],
+                        startedAt: Int(Date().timeIntervalSince1970 * 1000),
+                        isUserTurn: true
+                    )
+                    store.appendLocalTurn(userTurn, sessionId: sessionId)
+
                     Task {
-                        let prompt = Prompt(sessionId: sessionId, text: text)
-                        try? await connection.sendPrompt(prompt)
+                        do {
+                            let prompt = Prompt(sessionId: sessionId, text: text)
+                            try await connection.sendPrompt(prompt)
+                            sendError = nil
+                        } catch {
+                            sendError = error.localizedDescription
+                        }
                     }
                 },
                 onInterrupt: {
@@ -86,10 +137,15 @@ struct TimelineView: View {
         .navigationTitle(session?.name ?? "Session")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            // Fetch a fresh snapshot for this session on appear.
-            // Recovery may have already loaded it, but if we navigated
-            // here before recovery finished, or the bridge has newer state,
-            // this ensures we have the latest turns.
+            // 1. Hydrate from local cache immediately (no network wait)
+            if store.sessions[sessionId] == nil || store.sessions[sessionId]?.turns.isEmpty == true {
+                if let cached = SessionCache.shared.load(sessionId: sessionId) {
+                    store.applySnapshot(cached)
+                    PlexusLog.session.info("Restored \(cached.turns.count) turns from cache for \(sessionId)")
+                }
+            }
+
+            // 2. Overlay fresh state from bridge if connected
             guard connection.state == .connected else { return }
             do {
                 let snapshot = try await connection.getSnapshot(sessionId)
@@ -209,21 +265,25 @@ struct TimelineView: View {
 
     @ViewBuilder
     private var connectionIndicator: some View {
-        switch connection.state {
-        case .connected:
-            Circle()
-                .fill(PlexusColors.statusActive)
-                .frame(width: 7, height: 7)
-                .accessibilityLabel("Connected")
-        case .connecting, .handshaking, .reconnecting:
-            ProgressView()
-                .controlSize(.mini)
-                .accessibilityLabel("Connecting")
-        case .disconnected, .failed:
-            Circle()
-                .fill(PlexusColors.statusError)
-                .frame(width: 7, height: 7)
-                .accessibilityLabel("Disconnected")
+        Button {
+            Task { await connection.reconnect() }
+        } label: {
+            switch connection.state {
+            case .connected:
+                Circle()
+                    .fill(PlexusColors.statusActive)
+                    .frame(width: 7, height: 7)
+                    .accessibilityLabel("Connected — tap to reconnect")
+            case .connecting, .handshaking, .reconnecting:
+                ProgressView()
+                    .controlSize(.mini)
+                    .accessibilityLabel("Connecting — tap to retry")
+            case .disconnected, .failed:
+                Circle()
+                    .fill(PlexusColors.statusError)
+                    .frame(width: 7, height: 7)
+                    .accessibilityLabel("Disconnected — tap to reconnect")
+            }
         }
     }
 

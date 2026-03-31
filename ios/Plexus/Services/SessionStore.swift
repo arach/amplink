@@ -38,7 +38,11 @@ final class SessionStore: @unchecked Sendable {
 
     // MARK: - Init
 
-    init() {}
+    init() {
+        // Don't load cached sessions into the active list — the bridge is
+        // the authority on what's active. Cache is used by TimelineView to
+        // show past turns when navigating into a session.
+    }
 
     // MARK: - Bridge identity binding
 
@@ -124,6 +128,18 @@ final class SessionStore: @unchecked Sendable {
         if let key = bridgeIdentityKey {
             Self.persistLastAppliedSeq(seq, for: key)
         }
+    }
+
+    /// Append a local-only turn (e.g. user message) to a session.
+    func appendLocalTurn(_ turn: TurnState, sessionId: String) {
+        lock.lock()
+        guard var state = sessions[sessionId] else {
+            lock.unlock()
+            return
+        }
+        state.turns.append(turn)
+        sessions[sessionId] = state
+        lock.unlock()
     }
 
     // MARK: - Computed properties

@@ -3,4 +3,6 @@ export { Bridge } from "./src/bridge/bridge.ts";
 export { startRelay } from "./src/relay/relay.ts";
 export { ClaudeCodeAdapter, createAdapter as createClaudeCodeAdapter } from "./src/adapters/claude-code.ts";
 export { CodexAdapter, createAdapter as createCodexAdapter } from "./src/adapters/codex.ts";
+export { PiAdapter, createAdapter as createPiAdapter } from "./src/adapters/pi.ts";
+export { OpenCodeAdapter, createAdapter as createOpenCodeAdapter } from "./src/adapters/opencode.ts";
 export { OpenAICompatAdapter, createAdapter as createOpenAIAdapter } from "./src/adapters/openai-compat.ts";

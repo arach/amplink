@@ -18,6 +18,7 @@ import type {
 import { OutboundBuffer, type SequencedEvent } from "./buffer.ts";
 import { StateTracker } from "./state.ts";
 import type { SessionState, SessionSummary } from "./state.ts";
+import { log } from "./log.ts";
 
 // ---------------------------------------------------------------------------
 // Bridge configuration
@@ -193,6 +194,9 @@ export class Bridge {
 
   private broadcast(event: PlexusEvent): void {
     const seq = this.buffer.push(event);
+    if (event.event !== "block:delta") {
+      log.debug("event", `seq=${seq} ${event.event} → ${this.listeners.size} listener(s)`);
+    }
     const sequenced: SequencedEvent = {
       seq,
       event,

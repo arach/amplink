@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "project": {
+    "id": "plexus",
+    "name": "Plexus",
+    "root": "."
+  },
+  "agent": {
+    "id": "plexus",
+    "displayName": "Plexus",
+    "prompt": {},
+    "runtime": {
+      "defaults": {
+        "cwd": ".",
+        "harness": "codex",
+        "transport": "tmux",
+        "sessionId": "relay-plexus",
+        "launchArgs": [],
+        "capabilities": [
+          "chat",
+          "invoke",
+          "deliver"
+        ]
+      }
+    }
+  }
+}

@@ -11,6 +11,7 @@
 //   Inbound (phone -> bridge):  JSON-RPC requests
 //   Outbound (bridge -> phone): Plexus events + JSON-RPC responses (wrapped as { seq, event })
 
+import { log } from "./log.ts";
 import { readdirSync, readFileSync, realpathSync, statSync } from "fs";
 import { execSync } from "child_process";
 import { basename, isAbsolute, join, relative } from "path";
@@ -216,7 +217,7 @@ export function startBridgeServer(
 // ---------------------------------------------------------------------------
 
 export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCResponse> {
-  console.log(`[rpc] ${req.method}`);
+  log.info("rpc", req.method, req.params);
   try {
     switch (req.method) {
       case "session/create": {
@@ -241,7 +242,9 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
 
       case "prompt/send": {
         const prompt = req.params as Prompt;
+        log.info("prompt", `sending to session ${prompt.sessionId}`, { text: prompt.text?.slice(0, 80) });
         bridge.send(prompt);
+        log.info("prompt", "send() returned — adapter should be streaming");
         return { id: req.id, result: { ok: true } };
       }
 
@@ -323,10 +326,51 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
         return { id: req.id, result: { ok: true } };
       }
 
+      // -- Session resume ------------------------------------------------------
+
+      case "session/resume": {
+        const p = req.params as {
+          sessionPath: string;
+          adapterType?: string;
+          name?: string;
+        };
+
+        const sessionFilename = basename(p.sessionPath, ".jsonl");
+        const parentDir = p.sessionPath.substring(0, p.sessionPath.lastIndexOf("/"));
+        const dirName = basename(parentDir);
+
+        // Reconstruct CWD from Claude Code's path encoding: -Users-foo-dev-bar → /Users/foo/dev/bar
+        let cwd: string;
+        if (dirName.startsWith("-")) {
+          const candidate = "/" + dirName.slice(1).replace(/-/g, "/");
+          try {
+            statSync(candidate);
+            cwd = candidate;
+          } catch {
+            // Fallback: use workspace root or process cwd
+            const config = resolveConfig();
+            cwd = config.workspace?.root
+              ? resolveWorkspaceRoot(config.workspace.root)
+              : process.cwd();
+          }
+        } else {
+          cwd = process.cwd();
+        }
+
+        const adapterType = p.adapterType ?? "claude-code";
+        const name = p.name ?? extractProjectName(p.sessionPath);
+
+        const session = await bridge.createSession(adapterType, {
+          name,
+          cwd,
+          options: { resume: sessionFilename },
+        });
+        return { id: req.id, result: session };
+      }
+
       // -- Workspace discovery ------------------------------------------------
 
       case "workspace/info": {
-        console.log("[rpc] workspace/info");
         const config = resolveConfig();
         const configuredRoot = config.workspace?.root;
         if (!configuredRoot) {
@@ -342,7 +386,6 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
 
       case "workspace/list": {
         const p0 = req.params as { path?: string } | undefined;
-        console.log(`[rpc] workspace/list path=${p0?.path ?? "(root)"}`);
         const config = resolveConfig();
         const configuredRoot = config.workspace?.root;
         if (!configuredRoot) {
@@ -363,7 +406,6 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
 
       case "workspace/open": {
         const p = req.params as { path: string; adapter?: string; name?: string };
-        console.log(`[rpc] workspace/open path=${p.path} adapter=${p.adapter ?? "claude-code"}`);
         const config = resolveConfig();
         const configuredRoot = config.workspace?.root;
 
@@ -391,18 +433,21 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
       // -- Session History Discovery ------------------------------------------
 
       case "history/discover": {
-        const p = req.params as { maxAge?: number; limit?: number } | null;
+        const p = req.params as { maxAge?: number; limit?: number; project?: string } | null;
         const maxAgeDays = p?.maxAge ?? 14;
         const limit = p?.limit ?? 100;
-        console.log(`[rpc] history/discover maxAge=${maxAgeDays}d limit=${limit}`);
+        const projectFilter = p?.project;
 
-        const sessions = await discoverSessionFiles(maxAgeDays, limit);
+        let sessions = await discoverSessionFiles(maxAgeDays, limit);
+        if (projectFilter) {
+          const filter = projectFilter.toLowerCase();
+          sessions = sessions.filter((s) => s.project.toLowerCase().includes(filter));
+        }
         return { id: req.id, result: { sessions } };
       }
 
       case "history/search": {
         const p = req.params as { query: string; maxAge?: number; limit?: number };
-        console.log(`[rpc] history/search query="${p.query}" maxAge=${p.maxAge ?? 14}d`);
 
         const maxAge = p.maxAge ?? 14;
         const limit = p.limit ?? 20;
@@ -447,7 +492,6 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
 
       case "history/read": {
         const p = req.params as { path: string };
-        console.log(`[rpc] history/read path=${p.path}`);
 
         // Safety: only allow reading .jsonl files
         if (!p.path.endsWith(".jsonl")) {
@@ -597,37 +641,29 @@ async function discoverSessionFiles(maxAgeDays: number, limit: number): Promise<
     }
 
     try {
-      // Find .jsonl files modified within maxAgeDays
-      const cmd = `find "${pattern}" -name "*.jsonl" -mtime -${maxAgeDays} -type f 2>/dev/null`;
+      // Find .jsonl files, skip subagent dirs, batch stat in one exec
+      const cmd = `find "${pattern}" -name subagents -prune -o -name "*.jsonl" -mtime -${maxAgeDays} -type f -print0 2>/dev/null | xargs -0 stat -f "%m %z %N" 2>/dev/null | sort -rn | head -${limit}`;
       const output = execSync(cmd, { encoding: "utf-8", timeout: 5000 }).trim();
       if (!output) continue;
 
-      for (const filePath of output.split("\n")) {
-        if (!filePath.trim()) continue;
-        try {
-          const stat = statSync(filePath);
-          // Extract project name from path
-          // e.g., ~/.claude/projects/-Users-arach-dev-plexus/abc123.jsonl → plexus
-          const project = extractProjectName(filePath);
+      for (const line of output.split("\n")) {
+        if (!line.trim()) continue;
+        const firstSpace = line.indexOf(" ");
+        const secondSpace = line.indexOf(" ", firstSpace + 1);
+        if (firstSpace === -1 || secondSpace === -1) continue;
 
-          // Fast line count
-          let lineCount = 0;
-          try {
-            const wcOutput = execSync(`wc -l < "${filePath}"`, { encoding: "utf-8", timeout: 2000 });
-            lineCount = parseInt(wcOutput.trim(), 10) || 0;
-          } catch {}
+        const modifiedAt = parseInt(line.slice(0, firstSpace), 10) * 1000;
+        const sizeBytes = parseInt(line.slice(firstSpace + 1, secondSpace), 10);
+        const filePath = line.slice(secondSpace + 1);
 
-          results.push({
-            path: filePath,
-            project,
-            agent,
-            modifiedAt: stat.mtimeMs,
-            sizeBytes: stat.size,
-            lineCount,
-          });
-        } catch {
-          continue;
-        }
+        results.push({
+          path: filePath,
+          project: extractProjectName(filePath),
+          agent,
+          modifiedAt,
+          sizeBytes,
+          lineCount: 0,
+        });
       }
     } catch {
       continue;
@@ -637,27 +673,29 @@ async function discoverSessionFiles(maxAgeDays: number, limit: number): Promise<
   // Also scan workspace root for any .jsonl files in project dirs
   const config = resolveConfig();
   if (config.workspace?.root) {
+    const existingPaths = new Set(results.map(r => r.path));
     try {
       const root = resolveWorkspaceRoot(config.workspace.root);
-      const cmd = `find "${root}" -maxdepth 4 -name "*.jsonl" -mtime -${maxAgeDays} -type f 2>/dev/null | head -${limit}`;
+      const cmd = `find "${root}" -maxdepth 4 -name "*.jsonl" -mtime -${maxAgeDays} -type f -exec stat -f "%m %z %N" {} + 2>/dev/null`;
       const output = execSync(cmd, { encoding: "utf-8", timeout: 10000 }).trim();
       if (output) {
-        for (const filePath of output.split("\n")) {
-          if (!filePath.trim()) continue;
-          // Skip if already found
-          if (results.some(r => r.path === filePath)) continue;
-          try {
-            const stat = statSync(filePath);
-            const project = extractProjectName(filePath);
-            results.push({
-              path: filePath,
-              project,
-              agent: detectAgent(filePath),
-              modifiedAt: stat.mtimeMs,
-              sizeBytes: stat.size,
-              lineCount: 0,
-            });
-          } catch {}
+        for (const line of output.split("\n")) {
+          if (!line.trim()) continue;
+          const firstSpace = line.indexOf(" ");
+          const secondSpace = line.indexOf(" ", firstSpace + 1);
+          if (firstSpace === -1 || secondSpace === -1) continue;
+          const modifiedAt = parseInt(line.slice(0, firstSpace), 10) * 1000;
+          const sizeBytes = parseInt(line.slice(firstSpace + 1, secondSpace), 10);
+          const filePath = line.slice(secondSpace + 1);
+          if (existingPaths.has(filePath)) continue;
+          results.push({
+            path: filePath,
+            project: extractProjectName(filePath),
+            agent: detectAgent(filePath),
+            modifiedAt,
+            sizeBytes,
+            lineCount: 0,
+          });
         }
       }
     } catch {}

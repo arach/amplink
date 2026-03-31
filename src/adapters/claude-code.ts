@@ -1,12 +1,20 @@
-// Claude Code adapter — reference Plexus adapter implementation.
+// Claude Code adapter — persistent process with bidirectional stream-json.
 //
-// Spawns `claude` in a streaming mode, reads its JSON output, and maps
-// everything to Plexus primitives.  Demonstrates the full adapter lifecycle:
-// start → session active → send prompt → turn/block deltas → turn end.
+// Spawns `claude --print --input-format stream-json --output-format stream-json`
+// once on start(), keeps it alive, and sends turns by writing JSON messages to
+// stdin.  Claude Code streams responses on stdout as newline-delimited JSON.
 //
-// Claude Code supports `--output-format stream-json` which emits one JSON
-// object per line to stdout, covering messages, tool use, results, and
-// system events.
+// Input format:
+//   {"type":"user","message":{"role":"user","content":"..."},"session_id":"","parent_tool_use_id":null}
+//
+// Output events:
+//   system (init, hooks)  → session metadata
+//   assistant             → text/reasoning blocks
+//   tool_use              → action blocks
+//   tool_result           → action output/completion
+//   stream_event          → partial deltas
+//   result                → turn complete
+//   error                 → error blocks
 
 import { BaseAdapter } from "../protocol/adapter.ts";
 import type { AdapterConfig } from "../protocol/adapter.ts";
@@ -14,7 +22,6 @@ import type {
   Action,
   Block,
   BlockStatus,
-  PlexusEvent,
   Prompt,
   Turn,
   TurnStatus,
@@ -31,40 +38,63 @@ export class ClaudeCodeAdapter extends BaseAdapter {
   private process: Subprocess | null = null;
   private currentTurn: Turn | null = null;
   private blockIndex = 0;
-  private abortController: AbortController | null = null;
+  private claudeSessionId: string | null = null;
+
+  // Track active blocks by tool call ID for result correlation.
+  private toolBlockMap = new Map<string, string>();
 
   constructor(config: AdapterConfig) {
     super(config);
   }
 
   async start(): Promise<void> {
-    this.setStatus("active");
-  }
-
-  send(prompt: Prompt): void {
-    // Each prompt spawns a new claude process in streaming JSON mode.
-    // Claude Code outputs one JSON event per line to stdout.
     const args = [
+      "--print",
+      "--input-format", "stream-json",
       "--output-format", "stream-json",
-      "--verbose",
-      "--max-turns", "50",
-      "-p", prompt.text,
+      "--include-partial-messages",
     ];
-
-    // Add file mentions as context.
-    if (prompt.files?.length) {
-      for (const f of prompt.files) {
-        args.push("--file", f);
-      }
-    }
 
     const model = this.config.options?.["model"] as string | undefined;
     if (model) {
       args.push("--model", model);
     }
 
-    this.abortController = new AbortController();
+    // Resume an existing Claude Code session if specified.
+    const resumeId = this.config.options?.["resume"] as string | undefined;
+    if (resumeId) {
+      args.push("--resume", resumeId);
+    }
+
+    this.process = Bun.spawn(["claude", ...args], {
+      cwd: this.config.cwd,
+      env: { ...process.env, ...this.config.env },
+      stdin: "pipe",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    // Start reading stdout — runs for the lifetime of the process.
+    this.readStdout();
+
+    this.process.exited.then((code) => {
+      if (code !== 0 && this.session.status !== "closed") {
+        this.emit("error", new Error(`claude exited with code ${code}`));
+        this.setStatus("error");
+      }
+    });
+
+    this.setStatus("active");
+  }
+
+  send(prompt: Prompt): void {
+    if (!this.process?.stdin || typeof this.process.stdin === "number") {
+      this.emit("error", new Error("Claude Code process not running"));
+      return;
+    }
+
     this.blockIndex = 0;
+    this.toolBlockMap.clear();
 
     const turn: Turn = {
       id: crypto.randomUUID(),
@@ -76,21 +106,45 @@ export class ClaudeCodeAdapter extends BaseAdapter {
     this.currentTurn = turn;
     this.emit("event", { event: "turn:start", sessionId: this.session.id, turn });
 
-    this.process = Bun.spawn(["claude", ...args], {
-      cwd: this.config.cwd,
-      env: { ...process.env, ...this.config.env },
-      stdout: "pipe",
-      stderr: "pipe",
-      signal: this.abortController.signal,
-    });
+    // Build the content — text or array with images/files.
+    let content: string | Array<Record<string, unknown>> = prompt.text;
 
-    this.readStream(turn);
+    if (prompt.images?.length || prompt.files?.length) {
+      const parts: Array<Record<string, unknown>> = [];
+      parts.push({ type: "text", text: prompt.text });
+
+      if (prompt.images?.length) {
+        for (const img of prompt.images) {
+          parts.push({
+            type: "image",
+            source: { type: "base64", media_type: img.mimeType, data: img.data },
+          });
+        }
+      }
+
+      if (prompt.files?.length) {
+        parts.push({ type: "text", text: `\n\nReferenced files: ${prompt.files.join(", ")}` });
+      }
+
+      content = parts;
+    }
+
+    // Write the user message to stdin.
+    const msg = JSON.stringify({
+      type: "user",
+      session_id: this.claudeSessionId ?? "",
+      message: { role: "user", content },
+      parent_tool_use_id: null,
+    }) + "\n";
+
+    this.process.stdin.write(msg);
+    this.process.stdin.flush();
   }
 
   interrupt(): void {
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
+    // Send interrupt signal to the process — Claude Code handles SIGINT.
+    if (this.process && !this.process.killed) {
+      this.process.kill("SIGINT");
     }
     if (this.currentTurn) {
       this.endTurn(this.currentTurn, "stopped");
@@ -98,15 +152,18 @@ export class ClaudeCodeAdapter extends BaseAdapter {
   }
 
   async shutdown(): Promise<void> {
-    this.interrupt();
+    if (this.process && !this.process.killed) {
+      this.process.kill();
+    }
+    this.process = null;
     this.setStatus("closed");
   }
 
   // ---------------------------------------------------------------------------
-  // Stream reader — parses Claude Code's stream-json output line by line
+  // Persistent stdout reader
   // ---------------------------------------------------------------------------
 
-  private async readStream(turn: Turn): Promise<void> {
+  private async readStdout(): Promise<void> {
     const stdout = this.process?.stdout;
     if (!stdout || typeof stdout === "number") return;
 
@@ -127,108 +184,103 @@ export class ClaudeCodeAdapter extends BaseAdapter {
           const trimmed = line.trim();
           if (!trimmed) continue;
           try {
-            const event = JSON.parse(trimmed);
-            this.handleClaudeEvent(turn, event);
-          } catch {
-            // Skip malformed lines.
-          }
+            this.handleEvent(JSON.parse(trimmed));
+          } catch { /* skip malformed */ }
         }
       }
+    } catch { /* stream closed */ }
 
-      // Process remaining buffer.
-      if (buffer.trim()) {
-        try {
-          this.handleClaudeEvent(turn, JSON.parse(buffer.trim()));
-        } catch { /* skip */ }
-      }
-
-      // If we get here without an explicit turn end, mark completed.
-      if (turn.status !== "stopped" && turn.status !== "failed") {
-        this.endTurn(turn, "completed");
-      }
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        this.endTurn(turn, "stopped");
-      } else {
-        this.emitError(turn, err.message ?? "Stream read error");
-        this.endTurn(turn, "failed");
-      }
+    // Process exited — if there's an active turn, end it.
+    if (this.currentTurn && this.currentTurn.status !== "stopped") {
+      this.endTurn(this.currentTurn, "completed");
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Event mapping — Claude Code stream-json events → Plexus primitives
-  //
-  // Claude Code stream-json events include:
-  //   { type: "system", ... }         — system init info
-  //   { type: "assistant", ... }      — assistant text (message.content blocks)
-  //   { type: "tool_use", ... }       — tool invocation
-  //   { type: "tool_result", ... }    — tool output
-  //   { type: "result", ... }         — final result summary
-  //   { type: "error", ... }          — error
+  // Event router
   // ---------------------------------------------------------------------------
 
-  private handleClaudeEvent(turn: Turn, event: any): void {
+  private handleEvent(event: any): void {
     switch (event.type) {
+      case "system": {
+        if (event.subtype === "init") {
+          const sid = event.session_id ?? event.sessionId;
+          if (sid) this.claudeSessionId = sid;
+        }
+        // Skip hooks and other system events.
+        break;
+      }
+
       case "assistant": {
-        this.handleAssistantEvent(turn, event);
+        this.handleAssistant(event);
         break;
       }
 
       case "tool_use": {
-        this.handleToolUseEvent(turn, event);
+        this.handleToolUse(event);
         break;
       }
 
       case "tool_result": {
-        this.handleToolResultEvent(turn, event);
+        this.handleToolResult(event);
         break;
       }
 
       case "result": {
-        // Final summary — the same text was already emitted via "assistant"
-        // events during streaming. Skip creating a duplicate text block.
-        // The turn will be ended by the readStream() method after the
-        // stream closes.
+        // Turn complete — the stream continues for the next turn.
+        if (this.currentTurn && this.currentTurn.status !== "stopped") {
+          this.endTurn(this.currentTurn, event.subtype === "error" ? "failed" : "completed");
+        }
         break;
       }
 
       case "error": {
-        this.emitError(turn, event.error?.message ?? event.message ?? "Unknown error");
+        if (this.currentTurn) {
+          this.emitError(this.currentTurn, event.error?.message ?? event.message ?? "Unknown error");
+          this.endTurn(this.currentTurn, "failed");
+        }
         break;
       }
+
+      // stream_event, rate_limit_event, etc. — ignore for now.
     }
   }
 
-  private handleAssistantEvent(turn: Turn, event: any): void {
-    // Assistant events contain message.content array with text and thinking blocks.
+  // ---------------------------------------------------------------------------
+  // Event handlers
+  // ---------------------------------------------------------------------------
+
+  private handleAssistant(event: any): void {
+    if (!this.currentTurn) return;
+
     const content = event.message?.content ?? event.content;
     if (!Array.isArray(content)) return;
 
     for (const part of content) {
       if (part.type === "thinking" || part.type === "reasoning") {
-        const block = this.startBlock(turn, {
+        const block = this.startBlock(this.currentTurn, {
           type: "reasoning",
           text: part.thinking ?? part.text ?? "",
           status: "completed",
         });
-        this.emitBlockEnd(turn, block, "completed");
+        this.emitBlockEnd(this.currentTurn, block, "completed");
       } else if (part.type === "text") {
-        const block = this.startBlock(turn, {
+        const block = this.startBlock(this.currentTurn, {
           type: "text",
           text: part.text ?? "",
           status: "completed",
         });
-        this.emitBlockEnd(turn, block, "completed");
+        this.emitBlockEnd(this.currentTurn, block, "completed");
       }
     }
   }
 
-  private handleToolUseEvent(turn: Turn, event: any): void {
+  private handleToolUse(event: any): void {
+    if (!this.currentTurn) return;
+
     const toolName: string = event.tool_name ?? event.name ?? "unknown";
     const toolCallId: string = event.tool_use_id ?? event.id ?? crypto.randomUUID();
 
-    // Map well-known Claude Code tools to specific action kinds.
     let action: Action;
 
     if (toolName === "Edit" || toolName === "Write" || toolName === "MultiEdit") {
@@ -266,41 +318,39 @@ export class ClaudeCodeAdapter extends BaseAdapter {
       };
     }
 
-    const block = this.startBlock(turn, {
+    const block = this.startBlock(this.currentTurn, {
       type: "action",
       action,
       status: "streaming",
     });
 
-    // Stash the tool call ID → block ID mapping for result correlation.
-    (turn as any).__toolBlockMap ??= new Map();
-    (turn as any).__toolBlockMap.set(toolCallId, block.id);
+    this.toolBlockMap.set(toolCallId, block.id);
   }
 
-  private handleToolResultEvent(turn: Turn, event: any): void {
+  private handleToolResult(event: any): void {
+    if (!this.currentTurn) return;
+
     const toolCallId: string = event.tool_use_id ?? event.id ?? "";
-    const blockId: string = (turn as any).__toolBlockMap?.get(toolCallId);
+    const blockId = this.toolBlockMap.get(toolCallId);
     if (!blockId) return;
 
     const output = typeof event.content === "string"
       ? event.content
       : JSON.stringify(event.content ?? "");
 
-    // Emit the output delta.
     this.emit("event", {
       event: "block:action:output",
       sessionId: this.session.id,
-      turnId: turn.id,
+      turnId: this.currentTurn.id,
       blockId,
       output,
     });
 
-    // Mark action completed.
     const status = event.is_error ? "failed" : "completed";
     this.emit("event", {
       event: "block:action:status",
       sessionId: this.session.id,
-      turnId: turn.id,
+      turnId: this.currentTurn.id,
       blockId,
       status,
     });
@@ -308,7 +358,7 @@ export class ClaudeCodeAdapter extends BaseAdapter {
     this.emit("event", {
       event: "block:end",
       sessionId: this.session.id,
-      turnId: turn.id,
+      turnId: this.currentTurn.id,
       blockId,
       status: status === "failed" ? "failed" : "completed",
     });
@@ -371,7 +421,7 @@ export class ClaudeCodeAdapter extends BaseAdapter {
 }
 
 // ---------------------------------------------------------------------------
-// Factory export — what the bridge uses to register this adapter
+// Factory export
 // ---------------------------------------------------------------------------
 
 export const createAdapter = (config: AdapterConfig) => new ClaudeCodeAdapter(config);

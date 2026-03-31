@@ -2,6 +2,7 @@
 //
 // Just a URL. Spectator's static assets are cached aggressively by the browser.
 // Session data is fetched by spectator itself from /api/session-by-path.
+// "Resume" button creates a live session that continues the conversation.
 
 import SwiftUI
 import WebKit
@@ -9,11 +10,18 @@ import WebKit
 struct SpectatorView: View {
     let sessionPath: String
     let sessionName: String
+    var agentType: String = "claude-code"
+    var onResumed: ((String) -> Void)?
 
     @Environment(ConnectionManager.self) private var connection
     @Environment(\.dismiss) private var dismiss
 
     @State private var isLoading = true
+    @State private var isResuming = false
+
+    private var canResume: Bool {
+        connection.state == .connected && !isResuming
+    }
 
     var body: some View {
         NavigationStack {
@@ -45,6 +53,22 @@ struct SpectatorView: View {
                             .foregroundStyle(PlexusColors.textSecondary)
                     }
                 }
+
+                // Resuming overlay
+                if isResuming {
+                    ZStack {
+                        Color.black.opacity(0.4).ignoresSafeArea()
+                        VStack(spacing: PlexusSpacing.lg) {
+                            ProgressView().controlSize(.large).tint(.white)
+                            Text("Resuming session...")
+                                .font(PlexusTypography.body(16, weight: .medium))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(PlexusSpacing.xxl)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: PlexusRadius.lg, style: .continuous))
+                    }
+                }
             }
             .navigationTitle(sessionName)
             .navigationBarTitleDisplayMode(.inline)
@@ -57,6 +81,18 @@ struct SpectatorView: View {
                             .symbolRenderingMode(.hierarchical)
                     }
                 }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button { resumeSession() } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.uturn.forward")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Resume")
+                                .font(PlexusTypography.body(14, weight: .semibold))
+                        }
+                        .foregroundStyle(canResume ? PlexusColors.accent : PlexusColors.textMuted)
+                    }
+                    .disabled(!canResume)
+                }
             }
         }
     }
@@ -66,6 +102,27 @@ struct SpectatorView: View {
               let port = connection.bridgePort else { return nil }
         let encoded = sessionPath.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? sessionPath
         return URL(string: "http://\(host):\(port)/#/session?path=\(encoded)")
+    }
+
+    private func resumeSession() {
+        guard canResume else { return }
+        isResuming = true
+
+        Task {
+            do {
+                let session = try await connection.resumeSession(
+                    sessionPath: sessionPath,
+                    adapterType: agentType,
+                    name: sessionName
+                )
+                dismiss()
+                try? await Task.sleep(for: .milliseconds(300))
+                onResumed?(session.id)
+            } catch {
+                isResuming = false
+                PlexusLog.session.error("Resume failed: \(error.localizedDescription)")
+            }
+        }
     }
 }
 

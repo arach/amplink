@@ -11,6 +11,7 @@
 		05FF626F7692600353EF6AC3 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 817F1540699B6462613B49A6 /* ConnectionManager.swift */; };
 		0A965EE523252942554A75FB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BA95F8584A94948CFDE2E2 /* SettingsView.swift */; };
 		0B12CAD9C2EED10FF1520C1E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE74449CD41E71C15B23CA99 /* Theme.swift */; };
+		19C0090B67C67F23EAE03805 /* PlexusTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99F6E204D181D6188D0DBEB /* PlexusTextField.swift */; };
 		1A064F05593DC251B6AB5A20 /* SessionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 118DD6495A884D59E538A8B4 /* SessionRowView.swift */; };
 		1C53C014665E853B504F9106 /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 169B756449A1161F08ED31EF /* FluidAudio */; };
 		20B1D26F1D83EF7A05E34303 /* HarnessPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0633406855B7A3346EDC5F01 /* HarnessPickerView.swift */; };
@@ -52,6 +53,7 @@
 		EE0E24F133F80E43282170D4 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 860263F7368AB180652B883A /* LogView.swift */; };
 		EF50830CC0CEDEC56A05F0B3 /* SessionCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ACBCAFA5BAC04D16C6A9597 /* SessionCache.swift */; };
 		FACA0BAE612F59873784B555 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 375A26A387D3052C2A3BDCA9 /* OnboardingView.swift */; };
+		B6912AA8D37F4DE2B50F167C /* CrashCatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE3E38F1D74838A8F60B75 /* CrashCatcher.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -95,6 +97,7 @@
 		8F1750C46EC3279DA67BB780 /* PlexusCompactKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexusCompactKeyboard.swift; sourceTree = "<group>"; };
 		945C646B2EB512BFFC9F49E0 /* SessionDiscoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDiscoveryView.swift; sourceTree = "<group>"; };
 		9E65A50B731283903D5A5E34 /* PlexusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PlexusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A99F6E204D181D6188D0DBEB /* PlexusTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexusTextField.swift; sourceTree = "<group>"; };
 		AB2A68EF484B06D7BADF61C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AE74449CD41E71C15B23CA99 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		BA8AF0EDEF795AD6423B7898 /* PlexusVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexusVoice.swift; sourceTree = "<group>"; };
@@ -112,6 +115,7 @@
 		F4484F7483B3782E827BACCC /* BlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
 		F5A304C7F3F711F6A8D25F42 /* HistoryRPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRPC.swift; sourceTree = "<group>"; };
 		FADCA349F1920CCCAF25F989 /* SpectatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectatorView.swift; sourceTree = "<group>"; };
+		21CE3E38F1D74838A8F60B75 /* CrashCatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashCatcher.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +134,7 @@
 			isa = PBXGroup;
 			children = (
 				817F1540699B6462613B49A6 /* ConnectionManager.swift */,
+				21CE3E38F1D74838A8F60B75 /* CrashCatcher.swift */,
 				1CCFCAE4159929DD7FAEDE45 /* PlexusLog.swift */,
 				6ACBCAFA5BAC04D16C6A9597 /* SessionCache.swift */,
 				DF4E98DAEF85C5B5FEDBDD03 /* SessionStore.swift */,
@@ -173,6 +178,7 @@
 			children = (
 				C772A12B39A72B37766AB12B /* ComposerView.swift */,
 				E848E41D59098E261989EC72 /* MicButton.swift */,
+				A99F6E204D181D6188D0DBEB /* PlexusTextField.swift */,
 				47D449DF3709A2E4AD8B824A /* RecordingIndicator.swift */,
 			);
 			path = Composer;
@@ -448,6 +454,7 @@
 				4F917E86B594E758112593DE /* BlockView.swift in Sources */,
 				E17809B201D868F665E949FE /* ComposerView.swift in Sources */,
 				05FF626F7692600353EF6AC3 /* ConnectionManager.swift in Sources */,
+				B6912AA8D37F4DE2B50F167C /* CrashCatcher.swift in Sources */,
 				925C7585415CC0E3C5B2F4F4 /* ContentView.swift in Sources */,
 				4652709D7564D4AA9643274A /* ErrorBlockView.swift in Sources */,
 				6653ACB89B1A8FA557C04CFA /* Events.swift in Sources */,
@@ -465,6 +472,7 @@
 				25D73B06E9182835C697CCF6 /* PlexusCompactKeyboard.swift in Sources */,
 				A30F3235EF38DE8D043022A4 /* PlexusKeyboardView.swift in Sources */,
 				DBD8E8CFB69930E055783346 /* PlexusLog.swift in Sources */,
+				19C0090B67C67F23EAE03805 /* PlexusTextField.swift in Sources */,
 				4E930A19FACDD60129664DEE /* PlexusVoice.swift in Sources */,
 				3C00F77E69CAEF95AD2D0D3C /* Primitives.swift in Sources */,
 				796E65F80E7876C6ADB31EFC /* QRPayload.swift in Sources */,

@@ -16,7 +16,32 @@ struct TurnView: View {
         turn.blocks.sorted { $0.index < $1.index }
     }
 
+    private var isUser: Bool { turn.isUserTurn == true }
+
     var body: some View {
+        if isUser {
+            userBubble
+        } else {
+            assistantTurn
+        }
+    }
+
+    private var userBubble: some View {
+        HStack {
+            Spacer(minLength: 60)
+            Text(turn.blocks.first?.text ?? "")
+                .font(PlexusTypography.body(15))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(PlexusColors.accent)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .padding(.horizontal, PlexusSpacing.lg)
+        .padding(.vertical, PlexusSpacing.sm)
+    }
+
+    private var assistantTurn: some View {
         VStack(alignment: .leading, spacing: 0) {
             turnHeader
                 .padding(.bottom, PlexusSpacing.sm)
