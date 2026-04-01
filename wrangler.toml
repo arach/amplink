@@ -1,0 +1,31 @@
+name = "plexus"
+main = "cloudflare/worker.ts"
+compatibility_date = "2026-03-31"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "plexus_db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "cloudflare/migrations"
+
+[[kv_namespaces]]
+binding = "PLEXUS_DESKTOPS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+
+[[durable_objects.bindings]]
+name = "PLEXUS_SESSION"
+class_name = "PlexusSession"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PlexusSession"]
+
+[vars]
+DESKTOP_DISPATCH_URL = ""
+ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
+ELEVENLABS_VOICE_ID = "REPLACE_WITH_ELEVENLABS_VOICE_ID"
+PLEXUS_DEFAULT_USER = "local-dev"

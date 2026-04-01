@@ -13,10 +13,15 @@
     "plexus": "bun run src/cli.ts",
     "bridge": "bun run src/bridge/main.ts",
     "relay": "bun run src/relay/main.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p cloudflare/tsconfig.json --noEmit",
+    "typecheck:cloudflare": "tsc -p cloudflare/tsconfig.json --noEmit",
+    "cf:types": "wrangler types cloudflare/worker-configuration.d.ts --env-interface CloudflareEnv",
+    "cf:dev": "wrangler dev",
+    "cf:deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "wrangler": "^4.79.0"
   },
   "peerDependencies": {
     "typescript": "^5"
