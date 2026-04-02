@@ -18,9 +18,11 @@ async function main(): Promise<void> {
     ...(await loadEnvFiles(ENV_FILES)),
   };
 
-  const wranglerBinary = Bun.which("wrangler");
+  const wranglerBinary =
+    Bun.which("wrangler") ||
+    Bun.which(join(process.cwd(), "node_modules", ".bin", "wrangler"));
   if (!wranglerBinary) {
-    console.error("[run-wrangler] Could not find `wrangler` on PATH.");
+    console.error("[run-wrangler] Could not find `wrangler` on PATH or in node_modules/.bin.");
     process.exit(1);
   }
 

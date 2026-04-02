@@ -223,7 +223,9 @@ function resolveCloudflareTarget(
   argv: string[],
   env: NodeJS.ProcessEnv,
 ): CloudflareTarget {
-  const projectId = readFlagValue(argv, "--project-id")?.trim();
+  const projectId =
+    readFlagValue(argv, "--project-id")?.trim() ||
+    env.AMPLINK_CLOUDFLARE_PROJECT_ID?.trim();
   const envControlBaseUrl =
     env.AMPLINK_CONTROL_BASE_URL?.trim() || "wss://amplink.arach.workers.dev";
   const envWorkerUrl =
