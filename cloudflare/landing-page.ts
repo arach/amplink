@@ -180,11 +180,11 @@ export function renderLandingPage(): string {
             </div>
 
             <h1 class="animate-fade-up delay-1 text-4xl sm:text-6xl lg:text-[5.4rem] font-display tracking-[-0.04em] leading-[1.05] mb-8 text-ink">
-              Voice for your <em class="text-accent">AI agents</em>
+              Your local agents, <em class="text-accent">on your phone</em>
             </h1>
 
             <p class="animate-fade-up delay-2 text-[15px] leading-7 text-secondary max-w-xl mx-auto lg:mx-0 mb-10">
-              Talk to Claude Code, GPT, or any desktop agent from your phone. Encrypted relay through Cloudflare Workers, voice synthesis by ElevenLabs. Your credentials never leave your machine.
+              Give your phone a live viewport into Claude Code, GPT, or any agent running on your machine. API keys stay local. Everything streams through an encrypted relay.
             </p>
 
             <div class="animate-fade-up delay-3 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
@@ -198,11 +198,11 @@ export function renderLandingPage(): string {
                 View on GitHub
               </a>
               <button
-                onclick="navigator.clipboard.writeText('bun add amplink && bun run bridge');this.querySelector('.copy-icon').classList.add('hidden');this.querySelector('.check-icon').classList.remove('hidden');setTimeout(()=>{this.querySelector('.copy-icon').classList.remove('hidden');this.querySelector('.check-icon').classList.add('hidden')},2000)"
+                onclick="navigator.clipboard.writeText('bun install && bun run desktop:up');this.querySelector('.copy-icon').classList.add('hidden');this.querySelector('.check-icon').classList.remove('hidden');setTimeout(()=>{this.querySelector('.copy-icon').classList.remove('hidden');this.querySelector('.check-icon').classList.add('hidden')},2000)"
                 class="inline-flex h-11 items-center gap-3 rounded-lg border border-line-strong bg-panel px-5 font-mono text-[12px] text-secondary transition-colors hover:border-accent/30 hover:bg-canvas hover:text-ink"
               >
                 <span class="text-muted select-none">$</span>
-                <span>bun run bridge</span>
+                <span>bun run desktop:up</span>
                 <svg class="copy-icon text-muted ml-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 <svg class="check-icon hidden text-accent ml-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               </button>
@@ -402,12 +402,12 @@ export function renderLandingPage(): string {
             <div class="flex gap-5">
               <div class="flex-shrink-0 w-8 h-8 rounded-full border border-accent/30 bg-wave flex items-center justify-center font-mono text-[12px] text-accent">1</div>
               <div>
-                <h4 class="font-mono text-[13px] uppercase tracking-[0.08em] text-ink mb-2">Start the bridge</h4>
+                <h4 class="font-mono text-[13px] uppercase tracking-[0.08em] text-ink mb-2">Start the desktop stack</h4>
                 <p class="text-[15px] leading-7 text-secondary mb-3">
-                  Run the bridge on your machine. It spawns adapters for each agent you configure &mdash; Claude Code, OpenAI-compat, or your own.
+                  Run the bridge and desktop listener on your machine. It spawns adapters for each agent you configure &mdash; Claude Code, OpenAI-compat, or your own.
                 </p>
                 <code class="inline-block rounded-md border border-line-strong bg-canvas px-3 py-1.5 font-mono text-[12px] text-secondary">
-                  bun run bridge
+                  bun run desktop:up
                 </code>
               </div>
             </div>
