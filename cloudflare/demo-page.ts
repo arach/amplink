@@ -4,9 +4,9 @@ export function renderDemoPage(): string {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amplink | Demo</title>
-    <meta name="title" content="Amplink | Demo" />
-    <meta name="description" content="See Amplink in action. Talk to your desktop AI agents from your phone." />
+    <title>Amplink | Setup Guide</title>
+    <meta name="title" content="Amplink | Setup Guide" />
+    <meta name="description" content="Get Amplink running in minutes. Bridge, relay, phone — see the full setup flow." />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -72,26 +72,25 @@ export function renderDemoPage(): string {
       <div class="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12">
         <div class="text-center mb-12">
           <h1 class="text-3xl sm:text-5xl font-display italic tracking-[-0.03em] mb-5 text-ink">
-            See it in action
+            Setup Guide
           </h1>
           <p class="text-[15px] leading-7 text-secondary max-w-xl mx-auto">
-            Voice-control your AI agents from your phone. Encrypted, real-time, zero credentials on the wire.
+            Get Amplink running in minutes. Bridge, relay, phone — see the full setup flow.
           </p>
         </div>
 
-        <!-- Video placeholder -->
+        <!-- Video -->
         <div class="relative aspect-video rounded-2xl border border-line-strong bg-panel overflow-hidden">
-          <div class="absolute inset-0 flex flex-col items-center justify-center gap-5">
-            <div class="w-20 h-20 rounded-full border-2 border-line-strong bg-canvas flex items-center justify-center transition-colors hover:border-accent/50 hover:bg-wave cursor-pointer group">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" class="ml-1 text-muted group-hover:text-accent transition-colors">
-                <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/>
-              </svg>
-            </div>
-            <span class="font-mono text-[12px] uppercase tracking-[0.14em] text-muted">Demo video coming soon</span>
-          </div>
-
-          <!-- Decorative grid -->
-          <div class="absolute inset-0 opacity-30 pointer-events-none" style="background-image: linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 42px 42px;"></div>
+          <video
+            class="w-full h-full object-contain"
+            controls
+            playsinline
+            preload="metadata"
+            poster=""
+          >
+            <source src="/setup.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </div>
 
         <!-- Back link -->

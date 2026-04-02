@@ -3,6 +3,9 @@ main = "cloudflare/worker.ts"
 compatibility_date = "2026-03-31"
 keep_vars = true
 
+[assets]
+directory = "assets"
+
 [ai]
 binding = "AI"
 
