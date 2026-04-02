@@ -1,4 +1,5 @@
 import { handleControlRequest, resolveUserId } from "./control.ts";
+import { renderLandingPage } from "./landing-page.ts";
 import { handleRelayRequest } from "./relay.ts";
 import { handleVoiceAdminRequest } from "./voice-admin.ts";
 
@@ -40,22 +41,28 @@ export async function handleWorkerFetch(
 
   const url = new URL(request.url);
   if (request.method === "GET" && url.pathname === "/") {
-    return json({
-      name: "amplink-cloudflare",
-      routes: [
-        "GET /sessions",
-        "POST /start-session",
-        "GET /ws?session={id}&device=mobile",
-        "GET /listen?token={token}",
-        "GET /relay?room={id}&role=bridge|client",
-        "POST /relay/resolve",
-        "POST /control/register",
-        "GET /control/desktop",
-        "GET /admin",
-        "GET /api/voice-profile",
-        "PUT /api/voice-profile",
-        "POST /api/voice-preview",
-      ],
+    const accept = request.headers.get("accept") || "";
+    if (accept.includes("application/json") && !accept.includes("text/html")) {
+      return json({
+        name: "amplink-cloudflare",
+        routes: [
+          "GET /sessions",
+          "POST /start-session",
+          "GET /ws?session={id}&device=mobile",
+          "GET /listen?token={token}",
+          "GET /relay?room={id}&role=bridge|client",
+          "POST /relay/resolve",
+          "POST /control/register",
+          "GET /control/desktop",
+          "GET /admin",
+          "GET /api/voice-profile",
+          "PUT /api/voice-profile",
+          "POST /api/voice-preview",
+        ],
+      });
+    }
+    return new Response(renderLandingPage(), {
+      headers: { "content-type": "text/html; charset=utf-8" },
     });
   }
 
