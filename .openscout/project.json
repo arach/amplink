@@ -1,20 +1,20 @@
 {
   "version": 1,
   "project": {
-    "id": "plexus",
-    "name": "Plexus",
+    "id": "amplink",
+    "name": "Amplink",
     "root": "."
   },
   "agent": {
-    "id": "plexus",
-    "displayName": "Plexus",
+    "id": "amplink",
+    "displayName": "Amplink",
     "prompt": {},
     "runtime": {
       "defaults": {
         "cwd": ".",
         "harness": "codex",
         "transport": "tmux",
-        "sessionId": "relay-plexus",
+        "sessionId": "relay-amplink",
         "launchArgs": [],
         "capabilities": [
           "chat",

@@ -19,9 +19,9 @@ The phone doesn't get a degraded experience. It gets the same session.
 
 ### Adapter responsibility
 
-Before: "Map native events to Plexus primitives."
+Before: "Map native events to Amplink primitives."
 
-After: "Discover and reproduce the project's full tool environment, maintain session continuity across devices, and map native events to Plexus primitives."
+After: "Discover and reproduce the project's full tool environment, maintain session continuity across devices, and map native events to Amplink primitives."
 
 The mapping is still there, but it's the last step, not the only step.
 

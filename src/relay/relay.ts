@@ -1,9 +1,11 @@
-// Plexus relay — lightweight WebSocket forwarder.
+// Amplink relay — lightweight WebSocket forwarder.
 //
-// The relay knows nothing about Plexus primitives, adapters, or sessions.
-// It maintains "rooms" identified by a room ID.  Each room has one bridge
-// and any number of phone clients.  Messages from the bridge are broadcast
-// to all clients; messages from clients are forwarded to the bridge.
+// The relay knows nothing about Amplink primitives, adapters, or sessions.
+// It maintains "rooms" identified by a room ID. Each room has one bridge
+// and one active phone client. Reconnects replace the prior client socket.
+// This matches the bridge-side Noise transport, which maintains exactly one
+// cipher state for the remote phone. Messages from the bridge are forwarded
+// to the active client; messages from the active client are forwarded to the bridge.
 //
 // All payloads are opaque — the relay forwards them verbatim.  When E2E
 // encryption is added, the relay sees only ciphertext.
@@ -111,6 +113,13 @@ export function startRelay(port: number, options: RelayOptions = {}): { stop: ()
           // The key was already registered in fetch() via roomByBridgeKey.
           console.log(`[relay] bridge joined room ${roomId}`);
         } else {
+          if (room.clients.size > 0) {
+            const staleClients = [...room.clients];
+            room.clients.clear();
+            for (const staleClient of staleClients) {
+              staleClient.close(4002, "Replaced by new client");
+            }
+          }
           room.clients.add(ws);
           console.log(`[relay] client joined room ${roomId} (${room.clients.size} clients)`);
         }
@@ -122,11 +131,17 @@ export function startRelay(port: number, options: RelayOptions = {}): { stop: ()
         if (!room) return;
 
         if (role === "bridge") {
+          if (room.bridge !== ws) {
+            return;
+          }
           // Bridge → all clients.
           for (const client of room.clients) {
             client.send(data);
           }
         } else {
+          if (!room.clients.has(ws)) {
+            return;
+          }
           // Client → bridge.
           room.bridge?.send(data);
         }

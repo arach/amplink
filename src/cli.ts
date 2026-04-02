@@ -1,24 +1,26 @@
 #!/usr/bin/env bun
-// Plexus CLI
+// Amplink CLI
 //
 // Usage:
-//   plexus init                    — Set up workspace, identity, and config
-//   plexus start                   — Start bridge + relay
-//   plexus pair                    — Show QR code for phone pairing
-//   plexus open <project>          — Open a project session (starts bridge if needed)
-//   plexus status                  — Show running sessions
-//   plexus config                  — View current config
-//   plexus config set <key> <val>  — Update a config value
-//   plexus workspace               — List projects in workspace
-//   plexus workspace add <path>    — Add a project to auto-start
+//   amplink init                    — Set up workspace, identity, and config
+//   amplink start                   — Start bridge + relay
+//   amplink pair                    — Show QR code for phone pairing
+//   amplink open <project>          — Open a project session (starts bridge if needed)
+//   amplink status                  — Show running sessions
+//   amplink config                  — View current config
+//   amplink config set <key> <val>  — Update a config value
+//   amplink workspace               — List projects in workspace
+//   amplink workspace add <path>    — Add a project to auto-start
+//   amplink setup cloudflare        — Provision the Cloudflare voice backend
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from "fs";
 import { join, basename, resolve } from "path";
 import { homedir } from "os";
 import { execSync, spawn, type ChildProcess } from "child_process";
+import { runCloudflareSetup } from "./setup/cloudflare.ts";
 
-const PLEXUS_DIR = join(homedir(), ".plexus");
-const CONFIG_FILE = join(PLEXUS_DIR, "config.json");
+const AMPLINK_DIR = join(homedir(), ".amplink");
+const CONFIG_FILE = join(AMPLINK_DIR, "config.json");
 
 // ---------------------------------------------------------------------------
 // Config helpers
@@ -43,7 +45,7 @@ function loadConfig(): Config {
 }
 
 function saveConfig(config: Config): void {
-  mkdirSync(PLEXUS_DIR, { recursive: true });
+  mkdirSync(AMPLINK_DIR, { recursive: true });
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + "\n");
 }
 
@@ -56,10 +58,10 @@ function resolvePath(p: string): string {
 // ---------------------------------------------------------------------------
 
 async function init(): Promise<void> {
-  console.log("  plexus init");
+  console.log("  amplink init");
   console.log("  ─────────────────────────────────\n");
 
-  mkdirSync(PLEXUS_DIR, { recursive: true });
+  mkdirSync(AMPLINK_DIR, { recursive: true });
   const config = loadConfig();
 
   // Workspace root
@@ -104,7 +106,7 @@ async function init(): Promise<void> {
   }
 
   // Generate identity
-  const identityFile = join(PLEXUS_DIR, "identity.json");
+  const identityFile = join(AMPLINK_DIR, "identity.json");
   if (!existsSync(identityFile)) {
     // Import and call loadOrCreateIdentity to generate keys
     const { loadOrCreateIdentity, bytesToHex } = await import("./security/index.ts");
@@ -115,7 +117,7 @@ async function init(): Promise<void> {
   }
 
   // TLS cert
-  const hasCert = readdirSync(PLEXUS_DIR).some(f => f.endsWith(".crt"));
+  const hasCert = readdirSync(AMPLINK_DIR).some(f => f.endsWith(".crt"));
   if (!hasCert) {
     console.log(`  ℹ TLS cert will be auto-generated on first relay start`);
   } else {
@@ -126,9 +128,9 @@ async function init(): Promise<void> {
 
   console.log(`\n  config saved to ${CONFIG_FILE}`);
   console.log(`\n  next steps:`);
-  console.log(`    plexus start        — start bridge + relay`);
-  console.log(`    plexus workspace    — browse your projects`);
-  console.log(`    plexus pair         — show QR code for phone`);
+  console.log(`    amplink start        — start bridge + relay`);
+  console.log(`    amplink workspace    — browse your projects`);
+  console.log(`    amplink pair         — show QR code for phone`);
   console.log("");
 }
 
@@ -136,15 +138,15 @@ function start(): void {
   const config = loadConfig();
 
   if (!existsSync(CONFIG_FILE)) {
-    console.error("  plexus is not initialized. Run: plexus init");
+    console.error("  amplink is not initialized. Run: amplink init");
     process.exit(1);
   }
 
-  console.log("  starting plexus...\n");
+  console.log("  starting amplink...\n");
 
   // Start relay in background
   const relayProc = spawn("bun", ["run", "src/relay/main.ts"], {
-    cwd: findPlexusRoot(),
+    cwd: findAmplinkRoot(),
     stdio: ["ignore", "pipe", "pipe"],
     detached: false,
   });
@@ -162,7 +164,7 @@ function start(): void {
   // Give relay a moment to start, then start bridge
   setTimeout(() => {
     const bridgeProc = spawn("bun", ["run", "src/bridge/main.ts"], {
-      cwd: findPlexusRoot(),
+      cwd: findAmplinkRoot(),
       stdio: "inherit",
       detached: false,
     });
@@ -185,13 +187,13 @@ function start(): void {
 
 function pair(): void {
   if (!existsSync(CONFIG_FILE)) {
-    console.error("  plexus is not initialized. Run: plexus init");
+    console.error("  amplink is not initialized. Run: amplink init");
     process.exit(1);
   }
 
   // Just start bridge in pair mode — it shows QR
   const proc = spawn("bun", ["run", "src/bridge/main.ts", "--pair"], {
-    cwd: findPlexusRoot(),
+    cwd: findAmplinkRoot(),
     stdio: "inherit",
   });
 
@@ -201,11 +203,11 @@ function pair(): void {
 
 function status(): void {
   const config = loadConfig();
-  console.log("  plexus status");
+  console.log("  amplink status");
   console.log("  ─────────────────────────────────\n");
 
   if (!existsSync(CONFIG_FILE)) {
-    console.log("  not initialized — run: plexus init\n");
+    console.log("  not initialized — run: amplink init\n");
     return;
   }
 
@@ -215,7 +217,7 @@ function status(): void {
   console.log(`  root    : ${config.workspace?.root ?? "not set"}`);
   console.log(`  sessions: ${config.sessions?.length ?? 0} auto-start`);
 
-  const identityFile = join(PLEXUS_DIR, "identity.json");
+  const identityFile = join(AMPLINK_DIR, "identity.json");
   if (existsSync(identityFile)) {
     try {
       const id = JSON.parse(readFileSync(identityFile, "utf8"));
@@ -228,7 +230,7 @@ function status(): void {
 
 function showConfig(): void {
   if (!existsSync(CONFIG_FILE)) {
-    console.log("  no config — run: plexus init");
+    console.log("  no config — run: amplink init");
     return;
   }
   console.log(readFileSync(CONFIG_FILE, "utf8"));
@@ -261,7 +263,7 @@ function workspace(subPath?: string): void {
   const root = config.workspace?.root;
 
   if (!root) {
-    console.error("  no workspace root configured. Run: plexus init");
+    console.error("  no workspace root configured. Run: amplink init");
     process.exit(1);
   }
 
@@ -331,18 +333,18 @@ function open(project: string, adapter?: string): void {
     console.log(`  already configured: ${name}`);
   }
 
-  console.log(`  restart bridge to activate, or it will start on next: plexus start`);
+  console.log(`  restart bridge to activate, or it will start on next: amplink start`);
 }
 
 // ---------------------------------------------------------------------------
-// Find the plexus source root (for spawning bridge/relay)
+// Find the amplink source root (for spawning bridge/relay)
 // ---------------------------------------------------------------------------
 
-function findPlexusRoot(): string {
+function findAmplinkRoot(): string {
   // Check common locations
   const candidates = [
-    join(homedir(), "dev", "plexus"),
-    join(homedir(), "dev", "ext", "plexus"),
+    join(homedir(), "dev", "amplink"),
+    join(homedir(), "dev", "ext", "amplink"),
     process.cwd(),
   ];
 
@@ -359,7 +361,7 @@ function findPlexusRoot(): string {
     return root;
   }
 
-  console.error("  cannot find plexus source. Run from the plexus directory.");
+  console.error("  cannot find amplink source. Run from the amplink directory.");
   process.exit(1);
 }
 
@@ -401,10 +403,18 @@ switch (cmd) {
 
   case "open":
     if (!args[0]) {
-      console.error("  usage: plexus open <project> [--adapter codex]");
+      console.error("  usage: amplink open <project> [--adapter codex]");
       process.exit(1);
     }
     open(args[0], args.includes("--adapter") ? args[args.indexOf("--adapter") + 1] : undefined);
+    break;
+
+  case "setup":
+    if (args[0] !== "cloudflare") {
+      console.error("  usage: amplink setup cloudflare");
+      process.exit(1);
+    }
+    await runCloudflareSetup({ repoRoot: findAmplinkRoot() });
     break;
 
   case "help":
@@ -412,29 +422,31 @@ switch (cmd) {
   case "-h":
   case undefined:
     console.log(`
-  plexus — universal viewport for AI coding sessions
+  amplink — universal viewport for AI coding sessions
 
   commands:
     init                     set up workspace, identity, and config
     start                    start bridge + relay
     pair                     show QR code for phone pairing
     open <project>           add a project session (--adapter codex)
-    status                   show plexus status
+    setup cloudflare         provision the Cloudflare voice backend
+    status                   show amplink status
     config                   view config
     config set <key> <val>   update config (e.g. workspace.root ~/dev)
     workspace [path]         browse projects (alias: ws)
 
   examples:
-    plexus init
-    plexus open plexus
-    plexus open myapp --adapter codex
-    plexus ws ext
-    plexus config set relay wss://my-host:7889
-    plexus start
+    amplink init
+    amplink open amplink
+    amplink open myapp --adapter codex
+    amplink setup cloudflare
+    amplink ws ext
+    amplink config set relay wss://my-host:7889
+    amplink start
 `);
     break;
 
   default:
-    console.error(`  unknown command: ${cmd}\n  run: plexus --help`);
+    console.error(`  unknown command: ${cmd}\n  run: amplink --help`);
     process.exit(1);
 }

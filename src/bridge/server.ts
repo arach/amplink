@@ -1,7 +1,7 @@
 // Bridge WebSocket server.
 //
 // Exposes the bridge over a local WebSocket so the relay (or a direct LAN
-// connection from the phone) can send prompts and receive Plexus events.
+// connection from the phone) can send prompts and receive Amplink events.
 //
 // Supports two modes:
 //   - Plaintext (default): backward-compatible, no encryption
@@ -9,7 +9,7 @@
 //
 // Wire protocol: newline-delimited JSON.
 //   Inbound (phone -> bridge):  JSON-RPC requests
-//   Outbound (bridge -> phone): Plexus events + JSON-RPC responses (wrapped as { seq, event })
+//   Outbound (bridge -> phone): Amplink events + JSON-RPC responses (wrapped as { seq, event })
 
 import { log } from "./log.ts";
 import { readdirSync, readFileSync, realpathSync, statSync } from "fs";
@@ -17,7 +17,11 @@ import { execSync } from "child_process";
 import { basename, isAbsolute, join, relative } from "path";
 import { homedir } from "os";
 import type { Bridge } from "./bridge.ts";
-import type { Prompt } from "../protocol/index.ts";
+import type {
+  DesktopDispatchEnvelope,
+  Prompt,
+  Session,
+} from "../protocol/index.ts";
 import { resolveConfig } from "./config.ts";
 import {
   SecureTransport,
@@ -49,6 +53,8 @@ export interface BridgeServerOptions {
   secure?: boolean;
   /** Bridge's static key pair (required when secure=true). */
   identity?: KeyPair;
+  /** Optional bearer token required for POST /dispatch. */
+  dispatchSecret?: string;
 }
 
 interface SocketState {
@@ -76,10 +82,15 @@ export function startBridgeServer(
 
   const server = Bun.serve({
     port,
-    fetch(req, server) {
+    async fetch(req, server) {
+      const httpResponse = await handleBridgeHTTPRequest(bridge, req, options);
+      if (httpResponse) {
+        return httpResponse;
+      }
+
       const upgraded = server.upgrade(req);
       if (!upgraded) {
-        return new Response("Plexus bridge. Connect via WebSocket.", { status: 200 });
+        return new Response("Amplink bridge. Connect via WebSocket.", { status: 200 });
       }
     },
     websocket: {
@@ -212,6 +223,105 @@ export function startBridgeServer(
   };
 }
 
+export async function handleBridgeHTTPRequest(
+  bridge: Bridge,
+  request: Request,
+  options: BridgeServerOptions = {},
+): Promise<Response | null> {
+  const url = new URL(request.url);
+
+  if (request.method === "POST" && url.pathname === "/dispatch") {
+    return handleDispatchRequest(bridge, request, options);
+  }
+
+  if (request.method === "GET" && url.pathname === "/dispatch") {
+    return jsonResponse({
+      ok: true,
+      route: "/dispatch",
+      activeSessions: bridge.listSessions().length,
+    });
+  }
+
+  return null;
+}
+
+export async function handleDispatchRequest(
+  bridge: Bridge,
+  request: Request,
+  options: BridgeServerOptions = {},
+): Promise<Response> {
+  const dispatchSecret = options.dispatchSecret ?? process.env.AMPLINK_CONTROL_SHARED_SECRET;
+  if (dispatchSecret && request.headers.get("authorization") !== `Bearer ${dispatchSecret}`) {
+    return jsonResponse({ error: "Unauthorized dispatch request." }, 401);
+  }
+
+  const contentType = request.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return jsonResponse({ error: "Dispatch requests must be JSON." }, 415);
+  }
+
+  const bodyText = await request.text();
+  let payload: DesktopDispatchEnvelope;
+  try {
+    payload = JSON.parse(bodyText) as DesktopDispatchEnvelope;
+  } catch {
+    return jsonResponse({ error: "Invalid JSON dispatch payload." }, 400);
+  }
+
+  const promptText = payload.prompt?.text?.trim();
+  if (!promptText) {
+    return jsonResponse({ error: "Dispatch payload requires prompt.text." }, 400);
+  }
+
+  const target = await resolveDispatchSession(bridge, payload);
+  if (!target) {
+    return jsonResponse(
+      {
+        error: "No active desktop session could accept this dispatch.",
+        hint: "Provide targetSessionId/target.sessionId, or keep exactly one active session open.",
+        activeSessions: bridge.listSessions().map((session) => summarizeSession(session)),
+      },
+      409,
+    );
+  }
+
+  const prompt: Prompt = {
+    sessionId: target.session.id,
+    text: promptText,
+    files: payload.prompt.files,
+    images: payload.prompt.images,
+    providerOptions: {
+      ...payload.prompt.providerOptions,
+      source: payload.source,
+      voiceSessionId: payload.voiceSessionId ?? payload.sessionId,
+      voiceUserId: payload.userId,
+      voiceQuickReply: payload.quickReply,
+      voiceIntent: payload.intent.intent,
+      voiceConfidence: payload.intent.confidence,
+      voiceRequestedAt: payload.requestedAt,
+      voiceHistoryLength: payload.history.length,
+      bridgeDispatch: true,
+    },
+  };
+
+  log.info("dispatch", `routing voice session ${payload.voiceSessionId ?? payload.sessionId} to desktop session ${target.session.id}`, {
+    createdSession: target.createdSession,
+    adapterType: target.session.adapterType,
+    name: target.session.name,
+  });
+
+  bridge.send(prompt);
+
+  return jsonResponse(
+    {
+      ok: true,
+      createdSession: target.createdSession,
+      session: summarizeSession(target.session),
+    },
+    202,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // RPC handler — also used by relay-client.ts for relayed connections
 // ---------------------------------------------------------------------------
@@ -282,6 +392,22 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
           return { id: req.id, error: { code: -32001, message: `No session: ${p.sessionId}` } };
         }
         return { id: req.id, result: snapshot };
+      }
+
+      case "session/turn": {
+        const p = req.params as { sessionId: string; turnId: string };
+        const turn = bridge.getTurnSnapshot(p.sessionId, p.turnId);
+        if (!turn) {
+          return {
+            id: req.id,
+            error: {
+              code: -32001,
+              message: `No turn: ${p.turnId} in session ${p.sessionId}`,
+            },
+          };
+        }
+
+        return { id: req.id, result: turn };
       }
 
       case "bridge/status": {
@@ -515,6 +641,68 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
   } catch (err: any) {
     return { id: req.id, error: { code: -32000, message: err.message ?? "Internal error" } };
   }
+}
+
+async function resolveDispatchSession(
+  bridge: Bridge,
+  payload: DesktopDispatchEnvelope,
+): Promise<{ session: Session; createdSession: boolean } | null> {
+  const activeSessions = bridge.listSessions();
+  const requestedSessionIds = [
+    payload.targetSessionId,
+    payload.target?.sessionId,
+    payload.prompt.sessionId,
+  ].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+
+  for (const sessionId of requestedSessionIds) {
+    const session = activeSessions.find((entry) => entry.id === sessionId);
+    if (session) {
+      return { session, createdSession: false };
+    }
+  }
+
+  if (activeSessions.length === 1) {
+    const onlySession = activeSessions[0];
+    if (onlySession) {
+      return { session: onlySession, createdSession: false };
+    }
+  }
+
+  const target = payload.target;
+  if (target?.cwd || target?.adapterType || target?.name || target?.options) {
+    if (!target.cwd) {
+      throw new Error("Dispatch target creation requires target.cwd.");
+    }
+
+    const session = await bridge.createSession(target.adapterType ?? "claude-code", {
+      name: target.name,
+      cwd: target.cwd,
+      options: target.options,
+    });
+    return { session, createdSession: true };
+  }
+
+  return null;
+}
+
+function summarizeSession(session: Session): Record<string, unknown> {
+  return {
+    id: session.id,
+    name: session.name,
+    adapterType: session.adapterType,
+    status: session.status,
+    cwd: session.cwd,
+  };
+}
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
 }
 
 // ---------------------------------------------------------------------------

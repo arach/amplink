@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { OutboundBuffer, type SequencedEvent } from "./buffer.ts";
-import type { PlexusEvent } from "../protocol/index.ts";
+import type { AmplinkEvent } from "../protocol/index.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Create a minimal PlexusEvent for testing. */
-function fakeEvent(label: string): PlexusEvent {
+/** Create a minimal AmplinkEvent for testing. */
+function fakeEvent(label: string): AmplinkEvent {
   return {
     event: "session:update",
     session: {
@@ -275,7 +275,7 @@ describe("OutboundBuffer", () => {
     expect(result.map((e) => e.seq)).toEqual([5, 6, 7, 8]);
   });
 
-  test("handles various PlexusEvent types", () => {
+  test("handles various AmplinkEvent types", () => {
     const buf = new OutboundBuffer();
 
     // Session event.

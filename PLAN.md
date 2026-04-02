@@ -1,4 +1,4 @@
-# Plexus — Execution Plan
+# Amplink — Execution Plan
 
 You are building something that doesn't exist yet. A universal, encrypted, local-first mobile viewport into every AI coding session a developer runs. One app on their phone. Every agent they use. Zero credentials touching your infrastructure. The primitives are the product — get them right and an entire ecosystem builds itself on top.
 
@@ -10,7 +10,7 @@ The foundation is solid and tested. Here's what exists at `src/`:
 
 ### Protocol Layer (`src/protocol/`)
 - **Primitives** (`primitives.ts`): Session, Turn, Block, Delta, Prompt. Five block types: `text`, `reasoning`, `action`, `file`, `error`. Four action kinds: `file_change`, `command`, `tool_call`, `subagent`. Aligned with Vercel AI SDK LanguageModelV3 content types. This is the universal vocabulary.
-- **Adapter interface** (`adapter.ts`): `start()`, `send(prompt)`, `interrupt()`, `shutdown()` + event emitters. `BaseAdapter` handles boilerplate. Any backend implements this, emits Plexus events, and the phone renders it. That's the whole contract.
+- **Adapter interface** (`adapter.ts`): `start()`, `send(prompt)`, `interrupt()`, `shutdown()` + event emitters. `BaseAdapter` handles boilerplate. Any backend implements this, emits Amplink events, and the phone renders it. That's the whole contract.
 
 ### Bridge (`src/bridge/`)
 - **Bridge** (`bridge.ts`): Session manager. Creates adapter instances, routes events, manages lifecycle.
@@ -25,7 +25,7 @@ The foundation is solid and tested. Here's what exists at `src/`:
 - **Noise Protocol** (`noise.ts`): Full Noise Framework implementation. CipherState (AES-256-GCM + nonce), SymmetricState (HKDF-SHA256 chaining), HandshakeState (pattern execution). Two patterns:
   - **XX** (`Noise_XX_25519_AESGCM_SHA256`): 3-message mutual auth for QR pairing
   - **IK** (`Noise_IK_25519_AESGCM_SHA256`): 2-message trusted reconnect
-- **Identity** (`identity.ts`): Key persistence at `~/.plexus/identity.json`, trusted peer registry, QR payload generation.
+- **Identity** (`identity.ts`): Key persistence at `~/.amplink/identity.json`, trusted peer registry, QR payload generation.
 - **Transport** (`transport.ts`): `SecureTransport` wraps any WebSocket. Runs Noise handshake automatically, then encrypts/decrypts transparently. JSON envelope wire format.
 - **Tests** (`noise.test.ts`): XX handshake, IK handshake, replay protection — all passing.
 
@@ -74,7 +74,7 @@ Keep it lean. This adapter will be the most-used one in practice.
 **Files**: `src/bridge/buffer.ts` (new)
 
 Without this, a dropped connection means lost events. Build:
-1. `OutboundBuffer` class — ring buffer of the last 500 Plexus events, each tagged with a monotonic sequence number.
+1. `OutboundBuffer` class — ring buffer of the last 500 Amplink events, each tagged with a monotonic sequence number.
 2. When a client connects/reconnects, it sends its `lastSeq` number.
 3. Bridge replays all buffered events after `lastSeq`.
 4. Client tracks `lastAppliedSeq` to prevent duplicates.
@@ -98,9 +98,9 @@ This is the "pull" complement to the "push" event stream. Deltas for real-time, 
 **Files**: `src/bridge/main.ts` (enhance), `src/bridge/config.ts` (new)
 
 Make the bridge actually pleasant to use from a terminal:
-1. Config file at `~/.plexus/config.json` — relay URL, default adapters, adapter-specific options.
+1. Config file at `~/.amplink/config.json` — relay URL, default adapters, adapter-specific options.
 2. Terminal QR code display — when pairing, render the QR payload as ASCII art in the terminal (use a small QR library or `qrcode-terminal`). This is the magic moment: run the bridge, scan the QR, you're in.
-3. Subcommands: `plexus-bridge start` (default), `plexus-bridge pair` (show QR), `plexus-bridge status` (list sessions).
+3. Subcommands: `amplink-bridge start` (default), `amplink-bridge pair` (show QR), `amplink-bridge status` (list sessions).
 4. Auto-register adapters from config — user adds an entry, bridge loads it on start.
 
 #### Agent F: Integration Tests
@@ -111,7 +111,7 @@ End-to-end proof that the whole pipeline works:
 2. Spawn bridge connected to relay.
 3. Create a session with a mock adapter (not Claude Code — a simple echo adapter for testing).
 4. Simulate a phone client connecting to relay, completing XX handshake.
-5. Send a prompt, verify encrypted Plexus events arrive at the phone.
+5. Send a prompt, verify encrypted Amplink events arrive at the phone.
 6. Test reconnect: disconnect phone, reconnect, verify buffer replay.
 7. Test IK: disconnect, reconnect with known key, verify 2-message handshake.
 
@@ -134,11 +134,11 @@ The publishable spec. This is what adapter authors read, what the Swift client i
 
 ## Design Philosophy — Burn This Into Your Context
 
-1. **Plexus is a viewport, not a platform.** It never touches API keys, credentials, or provider accounts. The bridge runs on the user's machine. Their secrets stay on their hardware.
+1. **Amplink is a viewport, not a platform.** It never touches API keys, credentials, or provider accounts. The bridge runs on the user's machine. Their secrets stay on their hardware.
 
 2. **The relay is zero-knowledge.** It forwards opaque encrypted bytes. It cannot read payloads. When someone asks "is my data safe?" the answer is: even if the relay is compromised, the attacker gets ciphertext.
 
-3. **Primitives are the product.** If your thing emits valid Plexus blocks over the wire format, the phone app renders it. You define the vocabulary, the community builds the adapters. Like LSP for AI session observability.
+3. **Primitives are the product.** If your thing emits valid Amplink blocks over the wire format, the phone app renders it. You define the vocabulary, the community builds the adapters. Like LSP for AI session observability.
 
 4. **Adapters are someone else's problem — and that's a feature.** You ship the reference Claude Code adapter and the OpenAI-compat adapter. Everything else is community-contributed. Browser extensions, custom integrations, proprietary tools — they all just need to emit blocks.
 

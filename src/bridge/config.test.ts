@@ -12,8 +12,8 @@ describe("resolveConfigLayers", () => {
         sessions: [
           {
             adapter: "claude-code",
-            name: "Plexus",
-            cwd: "/Users/arach/dev/plexus",
+            name: "Amplink",
+            cwd: "/Users/arach/dev/amplink",
           },
         ],
       },
@@ -24,8 +24,8 @@ describe("resolveConfigLayers", () => {
     expect(resolved.sessions).toEqual([
       {
         adapter: "claude-code",
-        name: "Plexus",
-        cwd: "/Users/arach/dev/plexus",
+        name: "Amplink",
+        cwd: "/Users/arach/dev/amplink",
       },
     ]);
   });

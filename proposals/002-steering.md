@@ -6,7 +6,7 @@
 
 ## Problem
 
-Today, Plexus gives the phone two controls during an active turn: wait, or interrupt. There's no middle ground. But the most useful interaction is often neither — it's a nudge. "Use the existing helper instead of writing a new one." "Skip the tests for now." "That approach won't work, try X instead."
+Today, Amplink gives the phone two controls during an active turn: wait, or interrupt. There's no middle ground. But the most useful interaction is often neither — it's a nudge. "Use the existing helper instead of writing a new one." "Skip the tests for now." "That approach won't work, try X instead."
 
 OrbitDock calls this "steering" — injecting guidance into a running session without stopping the current turn. It's the difference between a director yelling "cut!" and whispering a note to an actor mid-scene.
 

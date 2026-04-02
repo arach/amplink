@@ -1,4 +1,4 @@
-// Plexus protocol primitives.
+// Amplink protocol primitives.
 //
 // These types define the universal vocabulary for AI session observability.
 // Every adapter — regardless of the backend (Claude Code, Codex, Gemini,
@@ -18,7 +18,7 @@ export type SessionStatus = "connecting" | "active" | "idle" | "error" | "closed
 export interface Session {
   /** Unique session identifier (UUID). */
   id: string;
-  /** Human-readable label (e.g. "Claude Code — plexus repo"). */
+  /** Human-readable label (e.g. "Claude Code — amplink repo"). */
   name: string;
   /** Adapter type that produced this session. */
   adapterType: string;
@@ -61,7 +61,7 @@ export interface Turn {
 //   reasoning  → LanguageModelV3ReasoningContent
 //   action     → LanguageModelV3ToolCall + ToolResult (unified)
 //   file       → LanguageModelV3FileContent
-//   error      → (no direct equivalent — Plexus addition)
+//   error      → (no direct equivalent — Amplink addition)
 // ---------------------------------------------------------------------------
 
 export type BlockStatus = "started" | "streaming" | "completed" | "failed";
@@ -278,7 +278,7 @@ export type SessionEvent =
 // Wire message — the union of everything that flows over the encrypted pipe
 // ---------------------------------------------------------------------------
 
-export type PlexusEvent = Delta | TurnEvent | SessionEvent;
+export type AmplinkEvent = Delta | TurnEvent | SessionEvent;
 
 // ---------------------------------------------------------------------------
 // Prompt — user input going into a session

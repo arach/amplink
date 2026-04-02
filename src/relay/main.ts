@@ -9,7 +9,7 @@
 // On first run with Tailscale available:
 //   1. Detects the Tailscale hostname
 //   2. Generates TLS certs via `tailscale cert`
-//   3. Stores them in ~/.plexus/
+//   3. Stores them in ~/.amplink/
 //   4. Serves wss:// automatically
 //
 // On subsequent runs, reuses the stored certs.
@@ -33,7 +33,7 @@ function hasFlag(flag: string): boolean {
 const port = Number(getArg("--port") ?? 7889);
 const noTls = hasFlag("--no-tls");
 
-const PLEXUS_DIR = join(homedir(), ".plexus");
+const AMPLINK_DIR = join(homedir(), ".amplink");
 
 // ---------------------------------------------------------------------------
 // TLS: find existing certs or generate via Tailscale
@@ -45,10 +45,10 @@ interface TLSPair {
 }
 
 function findStoredCerts(): TLSPair | null {
-  if (!existsSync(PLEXUS_DIR)) return null;
+  if (!existsSync(AMPLINK_DIR)) return null;
 
   try {
-    const files = readdirSync(PLEXUS_DIR);
+    const files = readdirSync(AMPLINK_DIR);
     const crtFile = files.find((f) => f.endsWith(".ts.net.crt"));
     if (!crtFile) return null;
 
@@ -56,8 +56,8 @@ function findStoredCerts(): TLSPair | null {
     if (!files.includes(keyFile)) return null;
 
     return {
-      cert: join(PLEXUS_DIR, crtFile),
-      key: join(PLEXUS_DIR, keyFile),
+      cert: join(AMPLINK_DIR, crtFile),
+      key: join(AMPLINK_DIR, keyFile),
     };
   } catch {
     return null;
@@ -79,10 +79,10 @@ function getTailscaleHostname(): string | null {
 }
 
 function generateTailscaleCerts(hostname: string): TLSPair | null {
-  mkdirSync(PLEXUS_DIR, { recursive: true });
+  mkdirSync(AMPLINK_DIR, { recursive: true });
 
-  const certPath = join(PLEXUS_DIR, `${hostname}.crt`);
-  const keyPath = join(PLEXUS_DIR, `${hostname}.key`);
+  const certPath = join(AMPLINK_DIR, `${hostname}.crt`);
+  const keyPath = join(AMPLINK_DIR, `${hostname}.key`);
 
   try {
     console.log(`[relay] generating TLS cert for ${hostname}...`);
@@ -90,7 +90,7 @@ function generateTailscaleCerts(hostname: string): TLSPair | null {
       stdio: ["pipe", "pipe", "pipe"],
       timeout: 30000,
     });
-    console.log(`[relay] cert stored in ${PLEXUS_DIR}`);
+    console.log(`[relay] cert stored in ${AMPLINK_DIR}`);
     return { cert: certPath, key: keyPath };
   } catch (err: any) {
     console.warn(`[relay] tailscale cert failed, falling back to self-signed`);
@@ -99,10 +99,10 @@ function generateTailscaleCerts(hostname: string): TLSPair | null {
 }
 
 function generateSelfSignedCert(hostname: string): TLSPair | null {
-  mkdirSync(PLEXUS_DIR, { recursive: true });
+  mkdirSync(AMPLINK_DIR, { recursive: true });
 
-  const certPath = join(PLEXUS_DIR, `${hostname}.crt`);
-  const keyPath = join(PLEXUS_DIR, `${hostname}.key`);
+  const certPath = join(AMPLINK_DIR, `${hostname}.crt`);
+  const keyPath = join(AMPLINK_DIR, `${hostname}.key`);
 
   try {
     execSync(
@@ -111,7 +111,7 @@ function generateSelfSignedCert(hostname: string): TLSPair | null {
       `-subj "/CN=${hostname}" -addext "subjectAltName=DNS:${hostname}"`,
       { stdio: ["pipe", "pipe", "pipe"], timeout: 10000 },
     );
-    console.log(`[relay] self-signed cert stored in ${PLEXUS_DIR}`);
+    console.log(`[relay] self-signed cert stored in ${AMPLINK_DIR}`);
     return { cert: certPath, key: keyPath };
   } catch (err: any) {
     console.warn(`[relay] failed to generate self-signed cert: ${err.message}`);

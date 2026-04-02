@@ -2,7 +2,7 @@ import { test, expect, describe } from "bun:test";
 import { StateTracker } from "./state.ts";
 import type {
   Session,
-  PlexusEvent,
+  AmplinkEvent,
   TextBlock,
   ReasoningBlock,
   ActionBlock,

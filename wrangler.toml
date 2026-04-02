@@ -1,31 +1,53 @@
-name = "plexus"
+name = "amplink"
 main = "cloudflare/worker.ts"
 compatibility_date = "2026-03-31"
+keep_vars = true
 
 [ai]
 binding = "AI"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "plexus_db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_name = "amplink_db"
+database_id = "e3228c32-da53-4446-ac59-8c1c833490b9"
 migrations_dir = "cloudflare/migrations"
 
 [[kv_namespaces]]
-binding = "PLEXUS_DESKTOPS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+binding = "AMPLINK_DESKTOPS"
+id = "e4deab6b8dbe4ba7acdf26eedc553a56"
+preview_id = "5afbb998582f4049a36f9a6aa0f7c095"
+
+[[kv_namespaces]]
+binding = "AMPLINK_VOICE_PROFILES"
+id = "6e16614d49db4f2db6db8321f66bfb7c"
+preview_id = "66714f989d704ad68e82070e099a7697"
 
 [[durable_objects.bindings]]
-name = "PLEXUS_SESSION"
-class_name = "PlexusSession"
+name = "AMPLINK_SESSION"
+class_name = "AmplinkSession"
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["PlexusSession"]
+new_sqlite_classes = ["AmplinkSession"]
+
+[[durable_objects.bindings]]
+name = "AMPLINK_CONTROL"
+class_name = "AmplinkControlHub"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["AmplinkControlHub"]
+
+[[durable_objects.bindings]]
+name = "AMPLINK_RELAY_ROOM"
+class_name = "AmplinkRelayRoom"
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["AmplinkRelayRoom"]
 
 [vars]
 DESKTOP_DISPATCH_URL = ""
 ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
-ELEVENLABS_VOICE_ID = "REPLACE_WITH_ELEVENLABS_VOICE_ID"
-PLEXUS_DEFAULT_USER = "local-dev"
+ELEVENLABS_VOICE_ID = "CwhRBWXzGAHq8TQ4Fs17"
+AMPLINK_DEFAULT_USER = "local-dev"

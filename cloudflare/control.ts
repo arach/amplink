@@ -1,49 +1,23 @@
-import type { Prompt } from "../src/protocol/primitives.ts";
+import type {
+  ControlSocketMessage,
+  DesktopDispatchEnvelope,
+  DesktopDispatchResult,
+  DesktopRegistration,
+  VoiceIntent,
+  VoiceIntentResult,
+  ConversationEntry,
+} from "../src/protocol/dispatch.ts";
+export type {
+  ControlSocketMessage,
+  ConversationEntry,
+  VoiceIntent,
+  VoiceIntentResult,
+  DesktopRegistration,
+  DesktopDispatchEnvelope,
+  DesktopDispatchResult,
+} from "../src/protocol/dispatch.ts";
 
 const DEFAULT_REGISTRATION_TTL_SECONDS = 60 * 60 * 12;
-
-export interface ConversationEntry {
-  role: "user" | "assistant";
-  text: string;
-  at: string;
-}
-
-export type VoiceIntent = "command" | "question" | "status" | "smalltalk" | "dictation";
-
-export interface VoiceIntentResult {
-  intent: VoiceIntent;
-  reply: string;
-  shouldDispatch: boolean;
-  dispatchPrompt: string;
-  confidence: number;
-}
-
-export interface DesktopRegistration {
-  userId: string;
-  endpoint: string;
-  desktopId?: string;
-  sessionId?: string;
-  registeredAt: string;
-}
-
-export interface DesktopDispatchEnvelope {
-  source: "cloudflare-voice";
-  sessionId: string;
-  userId: string;
-  prompt: Prompt;
-  quickReply: string;
-  intent: VoiceIntentResult;
-  history: ConversationEntry[];
-  requestedAt: string;
-}
-
-export interface DesktopDispatchResult {
-  queued: boolean;
-  endpoint?: string;
-  status?: number;
-  skipped?: boolean;
-  error?: string;
-}
 
 interface DesktopRegistrationInput {
   userId?: string;
@@ -66,7 +40,7 @@ export function resolveUserId(
   const userId =
     body?.userId ??
     url.searchParams.get("user") ??
-    request.headers.get("x-plexus-user") ??
+    request.headers.get("x-amplink-user") ??
     request.headers.get("x-user-id") ??
     fallbackUserId;
 
@@ -78,6 +52,10 @@ export async function handleControlRequest(
   env: CloudflareEnv,
 ): Promise<Response | null> {
   const url = new URL(request.url);
+  if (request.method === "GET" && url.pathname === "/listen") {
+    return handleListenRequest(request, env, url);
+  }
+
   if (!url.pathname.startsWith("/control")) {
     return null;
   }
@@ -86,9 +64,9 @@ export async function handleControlRequest(
     return json({ error: "Unauthorized control request." }, 401);
   }
 
-  if (!env.PLEXUS_DESKTOPS) {
+  if (!env.AMPLINK_DESKTOPS) {
     return json(
-      { error: "PLEXUS_DESKTOPS KV binding is required for control routes." },
+      { error: "AMPLINK_DESKTOPS KV binding is required for control routes." },
       503,
     );
   }
@@ -106,7 +84,7 @@ export async function handleControlRequest(
       return json({ error: "endpoint must be a valid absolute URL." }, 400);
     }
 
-    const userId = resolveUserId(request, env.PLEXUS_DEFAULT_USER || "anonymous", body);
+    const userId = resolveUserId(request, env.AMPLINK_DEFAULT_USER || "anonymous", body);
     const ttlSeconds = clampTtl(body.ttlSeconds);
     const registration: DesktopRegistration = {
       userId,
@@ -116,14 +94,14 @@ export async function handleControlRequest(
       registeredAt: new Date().toISOString(),
     };
 
-    await env.PLEXUS_DESKTOPS.put(
+    await env.AMPLINK_DESKTOPS.put(
       desktopUserKey(userId),
       JSON.stringify(registration),
       { expirationTtl: ttlSeconds },
     );
 
     if (registration.sessionId) {
-      await env.PLEXUS_DESKTOPS.put(
+      await env.AMPLINK_DESKTOPS.put(
         desktopSessionKey(registration.sessionId),
         JSON.stringify(registration),
         { expirationTtl: ttlSeconds },
@@ -147,11 +125,11 @@ export async function handleControlRequest(
     }
 
     if (sessionId) {
-      await env.PLEXUS_DESKTOPS.delete(desktopSessionKey(sessionId));
+      await env.AMPLINK_DESKTOPS.delete(desktopSessionKey(sessionId));
     }
 
     if (userId) {
-      await env.PLEXUS_DESKTOPS.delete(desktopUserKey(userId));
+      await env.AMPLINK_DESKTOPS.delete(desktopUserKey(userId));
     }
 
     return json({ ok: true, sessionId: sessionId || null, userId: userId || null });
@@ -159,7 +137,7 @@ export async function handleControlRequest(
 
   if (request.method === "GET" && url.pathname === "/control/desktop") {
     const sessionId = url.searchParams.get("session")?.trim() || undefined;
-    const userId = resolveUserId(request, env.PLEXUS_DEFAULT_USER || "anonymous");
+    const userId = resolveUserId(request, env.AMPLINK_DEFAULT_USER || "anonymous");
     const registration = await lookupDesktopRegistration(env, sessionId, userId);
     const response: DesktopLookupResponse = { registration };
     return json(response);
@@ -172,6 +150,11 @@ export async function dispatchToDesktop(
   env: CloudflareEnv,
   envelope: DesktopDispatchEnvelope,
 ): Promise<DesktopDispatchResult> {
+  const controlToken = getControlToken(env);
+  if (env.AMPLINK_CONTROL && controlToken) {
+    return dispatchToControlHub(env, controlToken, envelope);
+  }
+
   const registration = await lookupDesktopRegistration(
     env,
     envelope.sessionId,
@@ -183,6 +166,7 @@ export async function dispatchToDesktop(
     return {
       queued: false,
       skipped: true,
+      route: "none",
       error: "No desktop dispatch endpoint is registered yet.",
     };
   }
@@ -199,6 +183,7 @@ export async function dispatchToDesktop(
         queued: false,
         endpoint,
         status: response.status,
+        route: "http-endpoint",
         error: `Desktop dispatch rejected the request (${response.status}).`,
       };
     }
@@ -207,11 +192,95 @@ export async function dispatchToDesktop(
       queued: true,
       endpoint,
       status: response.status,
+      route: "http-endpoint",
     };
   } catch (error) {
     return {
       queued: false,
       endpoint,
+      route: "http-endpoint",
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function handleListenRequest(
+  request: Request,
+  env: CloudflareEnv,
+  url: URL,
+): Promise<Response> {
+  if (!env.AMPLINK_CONTROL) {
+    return json({ error: "AMPLINK_CONTROL Durable Object binding is required." }, 503);
+  }
+
+  if (request.headers.get("upgrade") !== "websocket") {
+    return json({ error: "Expected a WebSocket upgrade request." }, 426);
+  }
+
+  const requestedToken = url.searchParams.get("token")?.trim();
+  const controlToken = getControlToken(env);
+  if (!requestedToken) {
+    return json({ error: "token query parameter is required." }, 400);
+  }
+
+  if (controlToken && requestedToken !== controlToken) {
+    return json({ error: "Invalid listener token." }, 401);
+  }
+
+  const hubId = env.AMPLINK_CONTROL.idFromName(requestedToken);
+  const stub = env.AMPLINK_CONTROL.get(hubId);
+  const hubUrl = new URL("https://amplink-control.internal/connect");
+  hubUrl.searchParams.set("token", requestedToken);
+
+  return stub.fetch(new Request(hubUrl.toString(), request));
+}
+
+async function dispatchToControlHub(
+  env: CloudflareEnv,
+  token: string,
+  envelope: DesktopDispatchEnvelope,
+): Promise<DesktopDispatchResult> {
+  const hubId = env.AMPLINK_CONTROL.idFromName(token);
+  const stub = env.AMPLINK_CONTROL.get(hubId);
+  const hubUrl = new URL("https://amplink-control.internal/dispatch");
+  hubUrl.searchParams.set("token", token);
+
+  try {
+    const response = await stub.fetch(
+      new Request(hubUrl.toString(), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(envelope),
+      }),
+    );
+
+    const payload = safeParse<{ queued?: boolean; error?: string; taskId?: string }>(await response.text());
+    if (!response.ok) {
+      return {
+        queued: false,
+        endpoint: `control:${token}`,
+        status: response.status,
+        route: "control-websocket",
+        taskId: payload?.taskId,
+        error: payload?.error || `Control hub rejected the request (${response.status}).`,
+      };
+    }
+
+    return {
+      queued: payload?.queued === true,
+      endpoint: `control:${token}`,
+      status: response.status,
+      route: "control-websocket",
+      taskId: payload?.taskId,
+      error: payload?.queued === true ? undefined : payload?.error,
+    };
+  } catch (error) {
+    return {
+      queued: false,
+      endpoint: `control:${token}`,
+      route: "control-websocket",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -222,25 +291,25 @@ export async function lookupDesktopRegistration(
   sessionId: string | undefined,
   userId: string,
 ): Promise<DesktopRegistration | null> {
-  if (!env.PLEXUS_DESKTOPS) {
+  if (!env.AMPLINK_DESKTOPS) {
     return null;
   }
 
   if (sessionId) {
-    const scoped = await env.PLEXUS_DESKTOPS.get(desktopSessionKey(sessionId));
+    const scoped = await env.AMPLINK_DESKTOPS.get(desktopSessionKey(sessionId));
     if (scoped) {
       return safeParse<DesktopRegistration>(scoped);
     }
   }
 
-  const shared = await env.PLEXUS_DESKTOPS.get(desktopUserKey(userId));
+  const shared = await env.AMPLINK_DESKTOPS.get(desktopUserKey(userId));
   return shared ? safeParse<DesktopRegistration>(shared) : null;
 }
 
 function buildDispatchHeaders(env: CloudflareEnv): Headers {
   const headers = new Headers({
     "content-type": "application/json",
-    "x-plexus-source": "cloudflare-voice",
+    "x-amplink-source": "cloudflare-voice",
   });
 
   if (env.CONTROL_SHARED_SECRET?.trim()) {
@@ -256,6 +325,15 @@ function isControlAuthorized(request: Request, env: CloudflareEnv): boolean {
   }
 
   return request.headers.get("authorization") === `Bearer ${env.CONTROL_SHARED_SECRET}`;
+}
+
+function getControlToken(env: CloudflareEnv): string | null {
+  const token =
+    env.DESKTOP_LISTENER_TOKEN?.trim() ||
+    env.CONTROL_SHARED_SECRET?.trim() ||
+    "";
+
+  return token || null;
 }
 
 function desktopUserKey(userId: string): string {

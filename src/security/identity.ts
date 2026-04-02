@@ -1,7 +1,7 @@
-// Identity management for Plexus.
+// Identity management for Amplink.
 //
 // Each bridge has a persistent static key pair (its identity).  This module
-// handles generation, persistence (~/.plexus/identity.json), and QR payload
+// handles generation, persistence (~/.amplink/identity.json), and QR payload
 // creation for pairing with a phone.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
@@ -13,9 +13,9 @@ import { generateKeyPair, type KeyPair } from "./noise.ts";
 // Paths
 // ---------------------------------------------------------------------------
 
-const PLEXUS_DIR = join(homedir(), ".plexus");
-const IDENTITY_FILE = join(PLEXUS_DIR, "identity.json");
-const TRUSTED_PEERS_FILE = join(PLEXUS_DIR, "trusted-peers.json");
+const AMPLINK_DIR = join(homedir(), ".amplink");
+const IDENTITY_FILE = join(AMPLINK_DIR, "identity.json");
+const TRUSTED_PEERS_FILE = join(AMPLINK_DIR, "trusted-peers.json");
 
 // ---------------------------------------------------------------------------
 // Identity — the bridge's long-term key pair
@@ -44,7 +44,7 @@ function loadIdentity(): KeyPair {
 
 function createAndSaveIdentity(): KeyPair {
   const keyPair = generateKeyPair();
-  mkdirSync(PLEXUS_DIR, { recursive: true });
+  mkdirSync(AMPLINK_DIR, { recursive: true });
 
   const data: SerializedIdentity = {
     publicKey: bytesToHex(keyPair.publicKey),
@@ -69,15 +69,24 @@ export interface TrustedPeer {
 
 export function loadTrustedPeers(): Map<string, TrustedPeer> {
   if (!existsSync(TRUSTED_PEERS_FILE)) return new Map();
-  const data: TrustedPeer[] = JSON.parse(readFileSync(TRUSTED_PEERS_FILE, "utf8"));
-  return new Map(data.map((p) => [p.publicKey, p]));
+  const raw = readFileSync(TRUSTED_PEERS_FILE, "utf8");
+  const sanitized = sanitizeTrustedPeersJson(raw);
+
+  try {
+    const data: TrustedPeer[] = JSON.parse(sanitized);
+    return new Map(data.map((p) => [p.publicKey, p]));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[identity] failed to parse trusted peers file; ignoring corrupted data: ${message}`);
+    return new Map();
+  }
 }
 
 export function saveTrustedPeer(peer: TrustedPeer): void {
   const peers = loadTrustedPeers();
   peers.set(peer.publicKey, peer);
-  mkdirSync(PLEXUS_DIR, { recursive: true });
-  writeFileSync(TRUSTED_PEERS_FILE, JSON.stringify([...peers.values()], null, 2), { mode: 0o600 });
+  mkdirSync(AMPLINK_DIR, { recursive: true });
+  writeFileSync(TRUSTED_PEERS_FILE, `${JSON.stringify([...peers.values()], null, 2)}\n`, { mode: 0o600 });
 }
 
 export function isTrustedPeer(publicKeyHex: string): boolean {
@@ -99,6 +108,8 @@ export interface QRPayload {
   publicKey: string;
   /** Expiry timestamp (ms since epoch). */
   expiresAt: number;
+  /** Matching Cloudflare voice backend for this bridge session. */
+  cloudflareBaseUrl?: string;
 }
 
 const QR_VERSION = 1;
@@ -107,6 +118,7 @@ const QR_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 export function createQRPayload(
   bridgePublicKey: Uint8Array,
   relayUrl: string,
+  cloudflareBaseUrl?: string,
 ): QRPayload {
   return {
     v: QR_VERSION,
@@ -114,6 +126,7 @@ export function createQRPayload(
     room: crypto.randomUUID(),
     publicKey: bytesToHex(bridgePublicKey),
     expiresAt: Date.now() + QR_EXPIRY_MS,
+    cloudflareBaseUrl: cloudflareBaseUrl?.trim() || undefined,
   };
 }
 
@@ -121,6 +134,14 @@ export function validateQRPayload(payload: QRPayload): boolean {
   if (payload.v !== QR_VERSION) return false;
   if (Date.now() > payload.expiresAt) return false;
   if (!payload.relay || !payload.room || !payload.publicKey) return false;
+  if (payload.cloudflareBaseUrl) {
+    try {
+      const url = new URL(payload.cloudflareBaseUrl);
+      if (url.protocol !== "https:") return false;
+    } catch {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -138,4 +159,14 @@ export function hexToBytes(hex: string): Uint8Array {
     bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
   return bytes;
+}
+
+function sanitizeTrustedPeersJson(raw: string): string {
+  const withoutNuls = raw.replace(/\u0000+$/g, "").trim();
+  const lastArrayClose = withoutNuls.lastIndexOf("]");
+  if (lastArrayClose === -1) {
+    return withoutNuls;
+  }
+
+  return withoutNuls.slice(0, lastArrayClose + 1);
 }

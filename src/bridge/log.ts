@@ -1,4 +1,4 @@
-// Bridge logger — writes to ~/.plexus/bridge.log
+// Bridge logger — writes to ~/.amplink/bridge.log
 //
 // Usage:
 //   import { log } from "./log.ts";
@@ -6,13 +6,13 @@
 //   log.error("transport", "decrypt failed", err);
 //
 // Tail in another terminal:
-//   tail -f ~/.plexus/bridge.log
+//   tail -f ~/.amplink/bridge.log
 
 import { appendFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
-const LOG_DIR = join(homedir(), ".plexus");
+const LOG_DIR = join(homedir(), ".amplink");
 const LOG_FILE = join(LOG_DIR, "bridge.log");
 
 mkdirSync(LOG_DIR, { recursive: true });

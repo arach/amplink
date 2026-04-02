@@ -9,7 +9,7 @@
 //   bun run bridge -- --pair                      # show QR code and wait for pairing
 //   bun run bridge -- --relay ws://r:7889 --pair  # pair-only mode via relay
 //
-// Config file (~/.plexus/config.json) is loaded first, CLI flags override.
+// Config file (~/.amplink/config.json) is loaded first, CLI flags override.
 
 import { Bridge } from "./bridge.ts";
 import { startBridgeServer } from "./server.ts";
@@ -26,13 +26,17 @@ import { createAdapter as createOpenCode } from "../adapters/opencode.ts";
 import { loadOrCreateIdentity, bytesToHex } from "../security/index.ts";
 import { log } from "./log.ts";
 import { homedir } from "os";
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
 import type { AdapterFactory } from "../protocol/index.ts";
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
+loadEnvFile();
 const config = resolveConfig();
+const effectiveRelay = resolveRelayUrl(config.relay);
 
 // ---------------------------------------------------------------------------
 // Identity
@@ -103,9 +107,10 @@ const server = startBridgeServer(bridge, config.port, {
 
 let relayConnection: ReturnType<typeof connectToRelay> | null = null;
 
-if (config.relay) {
-  relayConnection = connectToRelay(config.relay, identity, bridge, {
+if (effectiveRelay) {
+  relayConnection = connectToRelay(effectiveRelay, identity, bridge, {
     secure: true, // Relay connections are always encrypted.
+    cloudflareBaseUrl: resolveCloudflareBaseUrl(),
   });
 
   // Show the QR code prominently in the terminal.
@@ -123,7 +128,7 @@ const fileServer = startFileServer({ port: config.port + 2 });
 // If --pair + --relay, we've already shown the QR — just keep the process alive.
 // ---------------------------------------------------------------------------
 
-if (config.pair && !config.relay) {
+if (config.pair && !effectiveRelay) {
   console.error("[bridge] --pair requires --relay <url> to generate a QR code");
   process.exit(1);
 }
@@ -160,22 +165,23 @@ if (config.sessions?.length) {
 
 function printBanner(): void {
   const idHex = bytesToHex(identity.publicKey).slice(0, 16);
-  const mode = config.relay ? "local + relay" : "local";
+  const mode = effectiveRelay ? "local + relay" : "local";
   const encryption = config.secure ? "Noise (local)" : "plaintext (local)";
   const adapterNames = Object.keys(adapters);
 
   console.log("");
-  console.log("  plexus bridge");
+  console.log("  amplink bridge");
   console.log("  ─────────────────────────────────");
   console.log(`  identity : ${idHex}...`);
   console.log(`  port     : ${config.port}`);
   console.log(`  mode     : ${mode}`);
-  console.log(`  encrypt  : ${encryption}${config.relay ? " + Noise (relay)" : ""}`);
+  console.log(`  encrypt  : ${encryption}${effectiveRelay ? " + Noise (relay)" : ""}`);
   console.log(`  adapters : ${adapterNames.join(", ")}`);
   console.log(`  files    : http://localhost:${config.port + 2}/`);
+  console.log(`  dispatch : http://localhost:${config.port}/dispatch`);
   console.log(`  log      : ${log.path}`);
-  if (config.relay) {
-    console.log(`  relay    : ${config.relay}`);
+  if (effectiveRelay) {
+    console.log(`  relay    : ${effectiveRelay}`);
   }
   console.log("  ─────────────────────────────────");
   console.log("");
@@ -196,3 +202,86 @@ async function shutdown(): Promise<void> {
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
+function resolveCloudflareBaseUrl(): string {
+  const explicit = process.env.AMPLINK_CLOUDFLARE_WORKER_URL?.trim();
+  return explicit && explicit.length > 0
+    ? explicit
+    : "https://amplink.arach.workers.dev";
+}
+
+function resolveRelayUrl(configRelay?: string): string | undefined {
+  if (hasCliRelayOverride()) {
+    return configRelay;
+  }
+
+  const explicit = process.env.AMPLINK_BRIDGE_RELAY_URL?.trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  const workerUrl = process.env.AMPLINK_CLOUDFLARE_WORKER_URL?.trim();
+  if (!workerUrl) {
+    return configRelay;
+  }
+
+  try {
+    const url = new URL(workerUrl);
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.pathname = "/relay";
+    url.search = "";
+    return url.toString();
+  } catch {
+    return configRelay;
+  }
+}
+
+function hasCliRelayOverride(): boolean {
+  return process.argv.includes("--relay") || process.argv.some((entry) => entry.startsWith("--relay="));
+}
+
+function loadEnvFile(filePath = resolve(process.cwd(), ".env.local")): void {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const contents = readFileSync(filePath, "utf8");
+  for (const line of contents.split(/\r?\n/)) {
+    const entry = parseEnvLine(line);
+    if (!entry || process.env[entry.key] !== undefined) {
+      continue;
+    }
+
+    process.env[entry.key] = entry.value;
+  }
+}
+
+function parseEnvLine(line: string): { key: string; value: string } | null {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) {
+    return null;
+  }
+
+  const withoutExport = trimmed.startsWith("export ")
+    ? trimmed.slice("export ".length).trim()
+    : trimmed;
+  const separator = withoutExport.indexOf("=");
+  if (separator <= 0) {
+    return null;
+  }
+
+  const key = withoutExport.slice(0, separator).trim();
+  const rawValue = withoutExport.slice(separator + 1).trim();
+  if (!key) {
+    return null;
+  }
+
+  return {
+    key,
+    value:
+      (rawValue.startsWith("\"") && rawValue.endsWith("\"")) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"))
+        ? rawValue.slice(1, -1)
+        : rawValue,
+  };
+}

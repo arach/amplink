@@ -1,4 +1,4 @@
-# Plexus iOS — Architectural Guide
+# Amplink iOS — Architectural Guide
 
 This document defines the hard boundaries for the iOS client and suggests patterns where useful. It is not an implementation spec — agents and developers have freedom inside the boundaries.
 
@@ -37,11 +37,11 @@ These are non-negotiable. Violating any of them is a bug.
 
 ## Suggested Patterns
 
-These are recommendations based on what worked in remodex and what fits the Plexus model. Use your judgment.
+These are recommendations based on what worked in remodex and what fits the Amplink model. Use your judgment.
 
 ### State Architecture
 
-An `@Observable` singleton that owns connection state, session data, and event routing works well for this scale. Remodex's `CodexService` pattern is a reasonable starting point — but Plexus manages N sessions instead of one, so the internal structure will differ.
+An `@Observable` singleton that owns connection state, session data, and event routing works well for this scale. Remodex's `CodexService` pattern is a reasonable starting point — but Amplink manages N sessions instead of one, so the internal structure will differ.
 
 Consider separating connection management from session state. The connection layer handles WebSocket lifecycle, Noise handshake, and raw message dispatch. The session layer accumulates state from routed events. This separation makes reconnect logic cleaner.
 
@@ -72,7 +72,7 @@ Design considerations:
 - Show project-type indicators based on the `hasGit`, `hasPackageJson` flags. The bridge also detects `Package.swift`, `Cargo.toml`, `go.mod`, `pyproject.toml` — the phone could request these as additional signals in future protocol versions.
 - Let the user pick the adapter type (claude-code, codex, openai) when opening a project. Default to claude-code.
 - `workspace/list` only returns directories (no files), skips dotfiles and `node_modules`.
-- If `workspace/info` returns `{ configured: false }`, prompt the user to set up the workspace root via the CLI (`plexus init`).
+- If `workspace/info` returns `{ configured: false }`, prompt the user to set up the workspace root via the CLI (`amplink init`).
 
 ### Reconnect Strategy
 
@@ -92,7 +92,7 @@ Reconnect flow:
 7. On handshake success: run the replay/snapshot recovery from `PROTOCOL.md` §4.
 8. On repeated IK failure (3+ attempts): clear the saved record, present QR scanner.
 
-The key insight: the QR scan is a one-time event. After that, the phone uses the bridge's public key as the permanent handle. Room IDs are ephemeral — the resolve endpoint maps the permanent key to the current room. The phone never needs to re-scan unless `~/.plexus/identity.json` is deleted on the bridge side.
+The key insight: the QR scan is a one-time event. After that, the phone uses the bridge's public key as the permanent handle. Room IDs are ephemeral — the resolve endpoint maps the permanent key to the current room. The phone never needs to re-scan unless `~/.amplink/identity.json` is deleted on the bridge side.
 
 The exact retry count, backoff timing, and UI treatment are implementation decisions.
 
@@ -128,8 +128,8 @@ Remodex (`/Users/arach/dev/ext/remodex/CodexMobile/`) is a working iOS app that 
 - **`CodexService+Connection.swift`**: Reconnect failure counting, grace periods, foreground recovery. Good behavioral reference.
 - **`GPTVoiceTranscriptionManager.swift`**: If voice input is needed later, this shows AVAudioEngine capture → WAV encoding → transcription.
 
-What remodex gets wrong that Plexus should not repeat:
+What remodex gets wrong that Amplink should not repeat:
 - No snapshot-based state recovery (replay buffer only).
 - Single-agent assumption baked into the data model and UI.
-- A dozen message `kind` values with special-case rendering (Plexus has 5 block types — keep it that way).
+- A dozen message `kind` values with special-case rendering (Amplink has 5 block types — keep it that way).
 - Custom handshake protocol instead of a standard framework.

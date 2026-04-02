@@ -27,6 +27,8 @@ import {
 export interface RelayClientOptions {
   /** Enable Noise encryption on the relay connection. Default: true. */
   secure?: boolean;
+  /** Matching Cloudflare voice backend for this bridge. */
+  cloudflareBaseUrl?: string;
 }
 
 export interface RelayConnection {
@@ -60,11 +62,11 @@ export function connectToRelay(
   bridge: Bridge,
   options: RelayClientOptions = {},
 ): RelayConnection {
-  const { secure = true } = options;
+  const { secure = true, cloudflareBaseUrl } = options;
 
   // Create the QR payload — this generates a room ID and packages everything
   // the phone needs to connect.
-  const qrPayload = createQRPayload(identity.publicKey, relayUrl);
+  const qrPayload = createQRPayload(identity.publicKey, relayUrl, cloudflareBaseUrl);
 
   let ws: WebSocket | null = null;
   let transport: SecureTransport | null = null;

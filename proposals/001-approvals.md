@@ -6,14 +6,14 @@
 
 ## Problem
 
-AI agents frequently perform actions that warrant human review before execution: destructive shell commands, file deletions, writes to sensitive paths, external API calls. Today, Plexus renders these as action blocks with `status: "running"` — the user sees what happened *after* it already happened.
+AI agents frequently perform actions that warrant human review before execution: destructive shell commands, file deletions, writes to sensitive paths, external API calls. Today, Amplink renders these as action blocks with `status: "running"` — the user sees what happened *after* it already happened.
 
 The phone is the perfect approval surface. You're away from your desk, the agent wants to `rm -rf build/` — your phone buzzes, you glance, tap deny. That interaction doesn't exist yet.
 
 ## Design Principles
 
 1. **Approval is an action-level concern, not session-level.** A turn can have multiple actions, some needing approval and some not. Lifting approval to the session or turn level would block non-sensitive actions unnecessarily.
-2. **The adapter decides what needs approval, not the protocol.** Plexus defines the mechanism; each adapter decides its own policy (Claude Code might gate on tool type, an OpenAI adapter might gate on function names).
+2. **The adapter decides what needs approval, not the protocol.** Amplink defines the mechanism; each adapter decides its own policy (Claude Code might gate on tool type, an OpenAI adapter might gate on function names).
 3. **Stale approvals must be harmless.** If the user's phone was offline and they approve something from 10 minutes ago after the turn has moved on, nothing should break.
 
 ## Protocol Changes

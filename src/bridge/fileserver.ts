@@ -13,7 +13,7 @@ const ALLOWED_ROOTS = [homedir(), "/tmp"];
 function isAllowedPath(filePath: string): boolean {
   if (!isAbsolute(filePath)) return false;
   const relToHome = filePath.slice(homedir().length + 1);
-  if (relToHome.startsWith(".") && !relToHome.startsWith(".claude") && !relToHome.startsWith(".plexus")) {
+  if (relToHome.startsWith(".") && !relToHome.startsWith(".claude") && !relToHome.startsWith(".amplink")) {
     return false;
   }
   return ALLOWED_ROOTS.some((root) => filePath.startsWith(root));
@@ -89,7 +89,7 @@ function route(url: URL, webRoot: string | null): Response {
     return new Response(Bun.file(join(webRoot, "index.html")));
   }
 
-  return new Response("Plexus file server", { status: 200 });
+  return new Response("Amplink file server", { status: 200 });
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +152,7 @@ function serveSessionList(url: URL): Response {
 // ---------------------------------------------------------------------------
 
 function findSpectatorDist(): string | null {
-  for (const dir of [join(homedir(), "dev/spectator/dist"), join(homedir(), ".plexus/spectator")]) {
+  for (const dir of [join(homedir(), "dev/spectator/dist"), join(homedir(), ".amplink/spectator")]) {
     if (existsSync(join(dir, "index.html"))) return dir;
   }
   return null;

@@ -1,0 +1,780 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A84C9E8F04E1F169EC2227F /* NoiseProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30DF1A5DCDD79B05696BBEF /* NoiseProtocolTests.swift */; };
+		1BDA832DE6F1FFC17DBC3242 /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = E8AA52D65F6E947A7FF6F16F /* FluidAudio */; };
+		1D7F1246D88CA8E48EE491A7 /* SessionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7925C0E543460BB3065BBC1A /* SessionRowView.swift */; };
+		21B602EEB9E4970EE3EBDB4C /* SpectatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5396BBC4039675E7F00CC8E /* SpectatorView.swift */; };
+		23A2CD087D3D714F51422EB5 /* ComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451D5FD512F20D720DEBF1D9 /* ComposerView.swift */; };
+		2C520C88006163942CC67178 /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFD46647895F843B0F18F7F /* SessionListView.swift */; };
+		2F89D2F4A6B04345DE4F1334 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB564CD7F1D32CCA9EBD7D3 /* Theme.swift */; };
+		32B832F1A588E37A8CDE1150 /* AmplinkTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB19AFA32E185406A08E45CD /* AmplinkTextField.swift */; };
+		3415492E2D9A23F83F81841D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5F7A23CFBF911DBFF7FD7812 /* Assets.xcassets */; };
+		3B049F35C0DB06EEF991528F /* AmplinkVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15C3DE917CC01EDE7ABA6D49 /* AmplinkVoice.swift */; };
+		3EAFC8D5FE30711434BDA062 /* AmplinkKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9410E8A8400FF8D230B1A00 /* AmplinkKeyboardView.swift */; };
+		3EC0E6538A901A4AB744B262 /* NoiseProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2387ACB19BB48A9706FB9B95 /* NoiseProtocol.swift */; };
+		4E48B0F93936A433FA1862C6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6305158C5C924D89E76E6F /* SettingsView.swift */; };
+		50C286B088E03F5C3A449E5A /* ReasoningBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F646BA3582A7301ECE9B6524 /* ReasoningBlockView.swift */; };
+		5A4446EC195D4324637C5DDA /* RPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F31006BB14F235FBB328864 /* RPC.swift */; };
+		662A81B1E17057522445FBE7 /* CrashCatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC671A9853AAA6BF773C9BD /* CrashCatcher.swift */; };
+		7E367A6AEC618C9FEB92CC5A /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4250F9DCB8D967E43D8444 /* PairingView.swift */; };
+		7E39308640CF9EF1F2B176A8 /* WorkspaceBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58528F7A5F447372C25DAB4E /* WorkspaceBrowserView.swift */; };
+		82EB0409E6A82495580C7DB0 /* KeyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB63414B550A42C408FA423 /* KeyComponents.swift */; };
+		8700939A17CCC360CC3041E5 /* HistoryRPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0A5A1B27896828F1DAED09 /* HistoryRPC.swift */; };
+		87C29555DE91AF19CD03E10F /* SessionDiscoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610F25132D5EE483BEF25135 /* SessionDiscoveryView.swift */; };
+		87F23AE5EB107DBC07173D09 /* QRPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8901F0582BF2A495F7D7080 /* QRPayload.swift */; };
+		8FD1B086D7B3C709B4D3A7CB /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17BD66C5F7EAF8B31A9872D /* OnboardingView.swift */; };
+		9846C0B7A9A679510032C0FE /* SessionHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01C5968FC9E8A772F49354CB /* SessionHistoryView.swift */; };
+		990D76032BD5C124012D243A /* AmplinkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC23290B91731AC39FD8E6D8 /* AmplinkApp.swift */; };
+		9D68DCEAA7E09DF6371E77BB /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8472A6D5DB88A74FF9D91443 /* LogView.swift */; };
+		9E1601C8CE259F76DF1B7596 /* FileBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69CD76DC77F5A5B45BE903DE /* FileBlockView.swift */; };
+		A60CF822055C90158DF2CB08 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DC2EC5210B2E1E969F3E39 /* QRScannerView.swift */; };
+		AF0B49282C3F5B4321CDF059 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CF9E9E00B89E21E0EFD869 /* TimelineView.swift */; };
+		B96DBD7CE45A47DFFBC4515B /* Events.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF712FF7DF6EFBF413D2A32D /* Events.swift */; };
+		BD051639A5A073568F3A00C6 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3832CEAB042D62591C9D21CA /* SessionStore.swift */; };
+		BE8B0DA7AB7EBA70C854B019 /* Identity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F199E42F2FCB16CDD6B4DF56 /* Identity.swift */; };
+		BE9B3EA66530747CBA6F74F7 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F03324BF7471EF9AF0F687 /* ConnectionManager.swift */; };
+		C098193839BA465FB0C0EBC4 /* AmplinkCompactKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50DDEF7D1919423093C8D2A8 /* AmplinkCompactKeyboard.swift */; };
+		C21E4D47C72E3F1FB942A166 /* ActionBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F66BB77B2171ED37B040C508 /* ActionBlockView.swift */; };
+		C8CD7C4C2E5E519459317D78 /* HarnessPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 732B10158B6F5FEB4294159B /* HarnessPickerView.swift */; };
+		C95215C717B9C0C8F8EE133B /* BlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24D2FC29CCC3A94D1C979D88 /* BlockView.swift */; };
+		CA51A89A6547EC9A37D5EB61 /* SecureTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338959F1EF3A048765F5B34F /* SecureTransport.swift */; };
+		CBD248C6D2891C44C2D9160D /* TurnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FFF3B2418A6A3EFFA63BA3 /* TurnView.swift */; };
+		CD785460DCE737FE032CB706 /* SessionCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BB27DD68F0C103D52994FB5 /* SessionCache.swift */; };
+		D1478F1E58E965F0C8AD8DEE /* ErrorBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A28DDC43ADDB9C36E73DD86E /* ErrorBlockView.swift */; };
+		DAAD183D4A1C9C5F68A36137 /* RecordingIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0067F6A978CD312B8F377E72 /* RecordingIndicator.swift */; };
+		EB76B97B7AE061F85B526EBC /* Primitives.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A24AFCEEAF9089824B553E5 /* Primitives.swift */; };
+		ECC1673C6D406D6130C3D273 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51DF0C05B17E5284788C8F0 /* ContentView.swift */; };
+		F15E104B826717E3B2484AE5 /* MicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D872794F02307C4BA2A2E33D /* MicButton.swift */; };
+		FF467849ECD3A4395387F1D7 /* TextBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71C2C11E23CB47545878CEBF /* TextBlockView.swift */; };
+		FFCA57186C9FF6AC73EC0355 /* AmplinkLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E520A3E1902003628FE86E /* AmplinkLog.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		974AE12F907275AFB8AB5952 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 54CE65D420B1452AB3E81D98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 32A7569A8B501E393F5FDF7D;
+			remoteInfo = Amplink;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0067F6A978CD312B8F377E72 /* RecordingIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIndicator.swift; sourceTree = "<group>"; };
+		01C5968FC9E8A772F49354CB /* SessionHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryView.swift; sourceTree = "<group>"; };
+		15C3DE917CC01EDE7ABA6D49 /* AmplinkVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmplinkVoice.swift; sourceTree = "<group>"; };
+		1B0A5A1B27896828F1DAED09 /* HistoryRPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRPC.swift; sourceTree = "<group>"; };
+		2387ACB19BB48A9706FB9B95 /* NoiseProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseProtocol.swift; sourceTree = "<group>"; };
+		24D2FC29CCC3A94D1C979D88 /* BlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
+		338959F1EF3A048765F5B34F /* SecureTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureTransport.swift; sourceTree = "<group>"; };
+		3832CEAB042D62591C9D21CA /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		451D5FD512F20D720DEBF1D9 /* ComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerView.swift; sourceTree = "<group>"; };
+		4A8956E729DBB7CDF4502381 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4B6305158C5C924D89E76E6F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4BB27DD68F0C103D52994FB5 /* SessionCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCache.swift; sourceTree = "<group>"; };
+		4CC671A9853AAA6BF773C9BD /* CrashCatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashCatcher.swift; sourceTree = "<group>"; };
+		4D4250F9DCB8D967E43D8444 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
+		4FD7DCBBFCA839A06F2723AA /* Amplink.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Amplink.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		50DDEF7D1919423093C8D2A8 /* AmplinkCompactKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmplinkCompactKeyboard.swift; sourceTree = "<group>"; };
+		56FFF3B2418A6A3EFFA63BA3 /* TurnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnView.swift; sourceTree = "<group>"; };
+		58528F7A5F447372C25DAB4E /* WorkspaceBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBrowserView.swift; sourceTree = "<group>"; };
+		5F31006BB14F235FBB328864 /* RPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPC.swift; sourceTree = "<group>"; };
+		5F7A23CFBF911DBFF7FD7812 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		610F25132D5EE483BEF25135 /* SessionDiscoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDiscoveryView.swift; sourceTree = "<group>"; };
+		69CD76DC77F5A5B45BE903DE /* FileBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBlockView.swift; sourceTree = "<group>"; };
+		71C2C11E23CB47545878CEBF /* TextBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBlockView.swift; sourceTree = "<group>"; };
+		732B10158B6F5FEB4294159B /* HarnessPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessPickerView.swift; sourceTree = "<group>"; };
+		7925C0E543460BB3065BBC1A /* SessionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRowView.swift; sourceTree = "<group>"; };
+		8472A6D5DB88A74FF9D91443 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
+		8A24AFCEEAF9089824B553E5 /* Primitives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Primitives.swift; sourceTree = "<group>"; };
+		8E33E629791E452F24F8A979 /* AmplinkTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AmplinkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0DC2EC5210B2E1E969F3E39 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		A28DDC43ADDB9C36E73DD86E /* ErrorBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBlockView.swift; sourceTree = "<group>"; };
+		AF712FF7DF6EFBF413D2A32D /* Events.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Events.swift; sourceTree = "<group>"; };
+		B17BD66C5F7EAF8B31A9872D /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B5396BBC4039675E7F00CC8E /* SpectatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectatorView.swift; sourceTree = "<group>"; };
+		B8CF9E9E00B89E21E0EFD869 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		BDB63414B550A42C408FA423 /* KeyComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyComponents.swift; sourceTree = "<group>"; };
+		CBB564CD7F1D32CCA9EBD7D3 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		D30DF1A5DCDD79B05696BBEF /* NoiseProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseProtocolTests.swift; sourceTree = "<group>"; };
+		D5F03324BF7471EF9AF0F687 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
+		D872794F02307C4BA2A2E33D /* MicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicButton.swift; sourceTree = "<group>"; };
+		DB19AFA32E185406A08E45CD /* AmplinkTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmplinkTextField.swift; sourceTree = "<group>"; };
+		DC23290B91731AC39FD8E6D8 /* AmplinkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmplinkApp.swift; sourceTree = "<group>"; };
+		DEFD46647895F843B0F18F7F /* SessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListView.swift; sourceTree = "<group>"; };
+		E4E520A3E1902003628FE86E /* AmplinkLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmplinkLog.swift; sourceTree = "<group>"; };
+		F199E42F2FCB16CDD6B4DF56 /* Identity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Identity.swift; sourceTree = "<group>"; };
+		F51DF0C05B17E5284788C8F0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F646BA3582A7301ECE9B6524 /* ReasoningBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningBlockView.swift; sourceTree = "<group>"; };
+		F66BB77B2171ED37B040C508 /* ActionBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionBlockView.swift; sourceTree = "<group>"; };
+		F8901F0582BF2A495F7D7080 /* QRPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRPayload.swift; sourceTree = "<group>"; };
+		F9410E8A8400FF8D230B1A00 /* AmplinkKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmplinkKeyboardView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A95071D045C46C9DF5A0D210 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BDA832DE6F1FFC17DBC3242 /* FluidAudio in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		04C51D7EB1E4D910271F7218 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				F199E42F2FCB16CDD6B4DF56 /* Identity.swift */,
+				2387ACB19BB48A9706FB9B95 /* NoiseProtocol.swift */,
+				F8901F0582BF2A495F7D7080 /* QRPayload.swift */,
+				338959F1EF3A048765F5B34F /* SecureTransport.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		0825D24812FC6068EA196AEB /* Blocks */ = {
+			isa = PBXGroup;
+			children = (
+				F66BB77B2171ED37B040C508 /* ActionBlockView.swift */,
+				24D2FC29CCC3A94D1C979D88 /* BlockView.swift */,
+				A28DDC43ADDB9C36E73DD86E /* ErrorBlockView.swift */,
+				69CD76DC77F5A5B45BE903DE /* FileBlockView.swift */,
+				F646BA3582A7301ECE9B6524 /* ReasoningBlockView.swift */,
+				71C2C11E23CB47545878CEBF /* TextBlockView.swift */,
+			);
+			path = Blocks;
+			sourceTree = "<group>";
+		};
+		098D7977A97B01C239753665 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4FD7DCBBFCA839A06F2723AA /* Amplink.app */,
+				8E33E629791E452F24F8A979 /* AmplinkTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		18926AEB119C9996565F267B /* AmplinkTests */ = {
+			isa = PBXGroup;
+			children = (
+				2E5D4EA69FD34BAE7042556D /* Security */,
+			);
+			path = AmplinkTests;
+			sourceTree = "<group>";
+		};
+		2E5D4EA69FD34BAE7042556D /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				D30DF1A5DCDD79B05696BBEF /* NoiseProtocolTests.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		39EB05AFB688F5F80B4FF978 /* Keyboard */ = {
+			isa = PBXGroup;
+			children = (
+				50DDEF7D1919423093C8D2A8 /* AmplinkCompactKeyboard.swift */,
+				F9410E8A8400FF8D230B1A00 /* AmplinkKeyboardView.swift */,
+				BDB63414B550A42C408FA423 /* KeyComponents.swift */,
+			);
+			path = Keyboard;
+			sourceTree = "<group>";
+		};
+		3C21DCDF884C840B82CEB3CB /* SessionList */ = {
+			isa = PBXGroup;
+			children = (
+				01C5968FC9E8A772F49354CB /* SessionHistoryView.swift */,
+				DEFD46647895F843B0F18F7F /* SessionListView.swift */,
+				7925C0E543460BB3065BBC1A /* SessionRowView.swift */,
+			);
+			path = SessionList;
+			sourceTree = "<group>";
+		};
+		45B6598E3454CF8C300C60C2 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				CBB564CD7F1D32CCA9EBD7D3 /* Theme.swift */,
+				0825D24812FC6068EA196AEB /* Blocks */,
+				CC683795774F3277F0DDF588 /* Composer */,
+				B6CCA2E69BE29E594849C472 /* Discovery */,
+				39EB05AFB688F5F80B4FF978 /* Keyboard */,
+				7D61426A09D790B424D4F34C /* Onboarding */,
+				80F9DE7BC272601839F652E7 /* Pairing */,
+				3C21DCDF884C840B82CEB3CB /* SessionList */,
+				B5A0B8180145989284645B73 /* Settings */,
+				9137C8BE2FA9B3DD81992C59 /* Timeline */,
+				DCD482B586ADB9EF2BDA1FE2 /* Workspace */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		68868DAE386DBDA4894C5D12 /* Amplink */ = {
+			isa = PBXGroup;
+			children = (
+				4A8956E729DBB7CDF4502381 /* Info.plist */,
+				8F31B2457B63506A1E44B1AD /* App */,
+				88C4D2C1905851E56182294B /* Models */,
+				C20860C1CD9891AA74DD1ACA /* Resources */,
+				04C51D7EB1E4D910271F7218 /* Security */,
+				DCE1155BB57AE141ABD48480 /* Services */,
+				45B6598E3454CF8C300C60C2 /* Views */,
+				92580E66C157D5F0E85BE2AA /* Voice */,
+			);
+			path = Amplink;
+			sourceTree = "<group>";
+		};
+		759A14B4FB55B39888C8C86A = {
+			isa = PBXGroup;
+			children = (
+				68868DAE386DBDA4894C5D12 /* Amplink */,
+				18926AEB119C9996565F267B /* AmplinkTests */,
+				098D7977A97B01C239753665 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7D61426A09D790B424D4F34C /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				B17BD66C5F7EAF8B31A9872D /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		80F9DE7BC272601839F652E7 /* Pairing */ = {
+			isa = PBXGroup;
+			children = (
+				4D4250F9DCB8D967E43D8444 /* PairingView.swift */,
+				A0DC2EC5210B2E1E969F3E39 /* QRScannerView.swift */,
+			);
+			path = Pairing;
+			sourceTree = "<group>";
+		};
+		88C4D2C1905851E56182294B /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AF712FF7DF6EFBF413D2A32D /* Events.swift */,
+				1B0A5A1B27896828F1DAED09 /* HistoryRPC.swift */,
+				8A24AFCEEAF9089824B553E5 /* Primitives.swift */,
+				5F31006BB14F235FBB328864 /* RPC.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		8F31B2457B63506A1E44B1AD /* App */ = {
+			isa = PBXGroup;
+			children = (
+				DC23290B91731AC39FD8E6D8 /* AmplinkApp.swift */,
+				F51DF0C05B17E5284788C8F0 /* ContentView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		9137C8BE2FA9B3DD81992C59 /* Timeline */ = {
+			isa = PBXGroup;
+			children = (
+				B8CF9E9E00B89E21E0EFD869 /* TimelineView.swift */,
+				56FFF3B2418A6A3EFFA63BA3 /* TurnView.swift */,
+			);
+			path = Timeline;
+			sourceTree = "<group>";
+		};
+		92580E66C157D5F0E85BE2AA /* Voice */ = {
+			isa = PBXGroup;
+			children = (
+				15C3DE917CC01EDE7ABA6D49 /* AmplinkVoice.swift */,
+			);
+			path = Voice;
+			sourceTree = "<group>";
+		};
+		B5A0B8180145989284645B73 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				8472A6D5DB88A74FF9D91443 /* LogView.swift */,
+				4B6305158C5C924D89E76E6F /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		B6CCA2E69BE29E594849C472 /* Discovery */ = {
+			isa = PBXGroup;
+			children = (
+				610F25132D5EE483BEF25135 /* SessionDiscoveryView.swift */,
+				B5396BBC4039675E7F00CC8E /* SpectatorView.swift */,
+			);
+			path = Discovery;
+			sourceTree = "<group>";
+		};
+		C20860C1CD9891AA74DD1ACA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5F7A23CFBF911DBFF7FD7812 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		CC683795774F3277F0DDF588 /* Composer */ = {
+			isa = PBXGroup;
+			children = (
+				DB19AFA32E185406A08E45CD /* AmplinkTextField.swift */,
+				451D5FD512F20D720DEBF1D9 /* ComposerView.swift */,
+				D872794F02307C4BA2A2E33D /* MicButton.swift */,
+				0067F6A978CD312B8F377E72 /* RecordingIndicator.swift */,
+			);
+			path = Composer;
+			sourceTree = "<group>";
+		};
+		DCD482B586ADB9EF2BDA1FE2 /* Workspace */ = {
+			isa = PBXGroup;
+			children = (
+				732B10158B6F5FEB4294159B /* HarnessPickerView.swift */,
+				58528F7A5F447372C25DAB4E /* WorkspaceBrowserView.swift */,
+			);
+			path = Workspace;
+			sourceTree = "<group>";
+		};
+		DCE1155BB57AE141ABD48480 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				E4E520A3E1902003628FE86E /* AmplinkLog.swift */,
+				D5F03324BF7471EF9AF0F687 /* ConnectionManager.swift */,
+				4CC671A9853AAA6BF773C9BD /* CrashCatcher.swift */,
+				4BB27DD68F0C103D52994FB5 /* SessionCache.swift */,
+				3832CEAB042D62591C9D21CA /* SessionStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		32A7569A8B501E393F5FDF7D /* Amplink */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2BBE648B08583E9ADBC4A550 /* Build configuration list for PBXNativeTarget "Amplink" */;
+			buildPhases = (
+				4C300D0193412AC5CA99AC3C /* Sources */,
+				382B8F9B40100401D393715B /* Resources */,
+				A95071D045C46C9DF5A0D210 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Amplink;
+			packageProductDependencies = (
+				E8AA52D65F6E947A7FF6F16F /* FluidAudio */,
+			);
+			productName = Amplink;
+			productReference = 4FD7DCBBFCA839A06F2723AA /* Amplink.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3AE1FD206DAD8FC468A2231C /* AmplinkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 322F37CACFF5F4D4A5B8848A /* Build configuration list for PBXNativeTarget "AmplinkTests" */;
+			buildPhases = (
+				7CF407AFDF73A2DFE6149C84 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E5400898FAC4D5F5D5A6F83E /* PBXTargetDependency */,
+			);
+			name = AmplinkTests;
+			packageProductDependencies = (
+			);
+			productName = AmplinkTests;
+			productReference = 8E33E629791E452F24F8A979 /* AmplinkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		54CE65D420B1452AB3E81D98 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					32A7569A8B501E393F5FDF7D = {
+						DevelopmentTeam = 2U83JFPW66;
+					};
+					3AE1FD206DAD8FC468A2231C = {
+						DevelopmentTeam = 2U83JFPW66;
+					};
+				};
+			};
+			buildConfigurationList = 452619AA6EDC30041134D1E7 /* Build configuration list for PBXProject "Amplink" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 759A14B4FB55B39888C8C86A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2F504C53A613B83893800EB6 /* XCRemoteSwiftPackageReference "FluidAudio" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				32A7569A8B501E393F5FDF7D /* Amplink */,
+				3AE1FD206DAD8FC468A2231C /* AmplinkTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		382B8F9B40100401D393715B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3415492E2D9A23F83F81841D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4C300D0193412AC5CA99AC3C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C21E4D47C72E3F1FB942A166 /* ActionBlockView.swift in Sources */,
+				990D76032BD5C124012D243A /* AmplinkApp.swift in Sources */,
+				C098193839BA465FB0C0EBC4 /* AmplinkCompactKeyboard.swift in Sources */,
+				3EAFC8D5FE30711434BDA062 /* AmplinkKeyboardView.swift in Sources */,
+				FFCA57186C9FF6AC73EC0355 /* AmplinkLog.swift in Sources */,
+				32B832F1A588E37A8CDE1150 /* AmplinkTextField.swift in Sources */,
+				3B049F35C0DB06EEF991528F /* AmplinkVoice.swift in Sources */,
+				C95215C717B9C0C8F8EE133B /* BlockView.swift in Sources */,
+				23A2CD087D3D714F51422EB5 /* ComposerView.swift in Sources */,
+				BE9B3EA66530747CBA6F74F7 /* ConnectionManager.swift in Sources */,
+				ECC1673C6D406D6130C3D273 /* ContentView.swift in Sources */,
+				662A81B1E17057522445FBE7 /* CrashCatcher.swift in Sources */,
+				D1478F1E58E965F0C8AD8DEE /* ErrorBlockView.swift in Sources */,
+				B96DBD7CE45A47DFFBC4515B /* Events.swift in Sources */,
+				9E1601C8CE259F76DF1B7596 /* FileBlockView.swift in Sources */,
+				C8CD7C4C2E5E519459317D78 /* HarnessPickerView.swift in Sources */,
+				8700939A17CCC360CC3041E5 /* HistoryRPC.swift in Sources */,
+				BE8B0DA7AB7EBA70C854B019 /* Identity.swift in Sources */,
+				82EB0409E6A82495580C7DB0 /* KeyComponents.swift in Sources */,
+				9D68DCEAA7E09DF6371E77BB /* LogView.swift in Sources */,
+				F15E104B826717E3B2484AE5 /* MicButton.swift in Sources */,
+				3EC0E6538A901A4AB744B262 /* NoiseProtocol.swift in Sources */,
+				8FD1B086D7B3C709B4D3A7CB /* OnboardingView.swift in Sources */,
+				7E367A6AEC618C9FEB92CC5A /* PairingView.swift in Sources */,
+				EB76B97B7AE061F85B526EBC /* Primitives.swift in Sources */,
+				87F23AE5EB107DBC07173D09 /* QRPayload.swift in Sources */,
+				A60CF822055C90158DF2CB08 /* QRScannerView.swift in Sources */,
+				5A4446EC195D4324637C5DDA /* RPC.swift in Sources */,
+				50C286B088E03F5C3A449E5A /* ReasoningBlockView.swift in Sources */,
+				DAAD183D4A1C9C5F68A36137 /* RecordingIndicator.swift in Sources */,
+				CA51A89A6547EC9A37D5EB61 /* SecureTransport.swift in Sources */,
+				CD785460DCE737FE032CB706 /* SessionCache.swift in Sources */,
+				87C29555DE91AF19CD03E10F /* SessionDiscoveryView.swift in Sources */,
+				9846C0B7A9A679510032C0FE /* SessionHistoryView.swift in Sources */,
+				2C520C88006163942CC67178 /* SessionListView.swift in Sources */,
+				1D7F1246D88CA8E48EE491A7 /* SessionRowView.swift in Sources */,
+				BD051639A5A073568F3A00C6 /* SessionStore.swift in Sources */,
+				4E48B0F93936A433FA1862C6 /* SettingsView.swift in Sources */,
+				21B602EEB9E4970EE3EBDB4C /* SpectatorView.swift in Sources */,
+				FF467849ECD3A4395387F1D7 /* TextBlockView.swift in Sources */,
+				2F89D2F4A6B04345DE4F1334 /* Theme.swift in Sources */,
+				AF0B49282C3F5B4321CDF059 /* TimelineView.swift in Sources */,
+				CBD248C6D2891C44C2D9160D /* TurnView.swift in Sources */,
+				7E39308640CF9EF1F2B176A8 /* WorkspaceBrowserView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7CF407AFDF73A2DFE6149C84 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A84C9E8F04E1F169EC2227F /* NoiseProtocolTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E5400898FAC4D5F5D5A6F83E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 32A7569A8B501E393F5FDF7D /* Amplink */;
+			targetProxy = 974AE12F907275AFB8AB5952 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		266E3E4550C5C3E7C0BD6004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.amplink.AmplinkTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Amplink.app/Amplink";
+			};
+			name = Debug;
+		};
+		38345E5DA92D9C4F4CE4A41F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 2U83JFPW66;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		74C6AA1E4D4C811FA040806B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.amplink.AmplinkTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Amplink.app/Amplink";
+			};
+			name = Release;
+		};
+		B04285A69D5B1487493B294D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Amplink/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Amplink uses the camera to scan QR codes for bridge pairing";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Amplink uses the microphone for voice-to-text input";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Amplink uses on-device speech recognition to transcribe voice input";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationAllButUpsideDown;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.amplink.Amplink;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C3F3807CFC9D606472B6B5A6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 2U83JFPW66;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		D67ED8A54B754770371E731F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Amplink/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Amplink uses the camera to scan QR codes for bridge pairing";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Amplink uses the microphone for voice-to-text input";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Amplink uses on-device speech recognition to transcribe voice input";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationAllButUpsideDown;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.amplink.Amplink;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2BBE648B08583E9ADBC4A550 /* Build configuration list for PBXNativeTarget "Amplink" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D67ED8A54B754770371E731F /* Debug */,
+				B04285A69D5B1487493B294D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		322F37CACFF5F4D4A5B8848A /* Build configuration list for PBXNativeTarget "AmplinkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				266E3E4550C5C3E7C0BD6004 /* Debug */,
+				74C6AA1E4D4C811FA040806B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		452619AA6EDC30041134D1E7 /* Build configuration list for PBXProject "Amplink" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C3F3807CFC9D606472B6B5A6 /* Debug */,
+				38345E5DA92D9C4F4CE4A41F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2F504C53A613B83893800EB6 /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E8AA52D65F6E947A7FF6F16F /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2F504C53A613B83893800EB6 /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 54CE65D420B1452AB3E81D98 /* Project object */;
+}

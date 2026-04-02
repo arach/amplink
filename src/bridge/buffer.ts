@@ -1,21 +1,21 @@
-// OutboundBuffer — a fixed-size ring buffer of sequenced Plexus events.
+// OutboundBuffer — a fixed-size ring buffer of sequenced Amplink events.
 //
 // Every event that flows through the bridge gets assigned a monotonic
 // sequence number and stored in this buffer.  When a phone reconnects,
 // it provides its last-seen seq and the bridge replays everything after
 // that point.  This gives us seamless reconnection without persistence.
 
-import type { PlexusEvent } from "../protocol/index.ts";
+import type { AmplinkEvent } from "../protocol/index.ts";
 
 // ---------------------------------------------------------------------------
-// Sequenced event — a Plexus event annotated with ordering metadata
+// Sequenced event — a Amplink event annotated with ordering metadata
 // ---------------------------------------------------------------------------
 
 export interface SequencedEvent {
   /** Monotonic sequence number (starts at 1, never resets). */
   seq: number;
-  /** The original Plexus event. */
-  event: PlexusEvent;
+  /** The original Amplink event. */
+  event: AmplinkEvent;
   /** Unix epoch milliseconds when the event was buffered. */
   timestamp: number;
 }
@@ -52,7 +52,7 @@ export class OutboundBuffer {
    *
    * @returns The assigned sequence number.
    */
-  push(event: PlexusEvent): number {
+  push(event: AmplinkEvent): number {
     const seq = this.nextSeq++;
     const entry: SequencedEvent = {
       seq,

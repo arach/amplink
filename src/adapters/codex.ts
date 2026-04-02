@@ -3,7 +3,7 @@
 // Unlike Claude Code (which spawns a fresh process per prompt), Codex runs
 // as a persistent app-server.  The adapter spawns `codex app-server` once
 // on start(), then sends JSON-RPC requests for each prompt and maps the
-// streaming notifications back to Plexus primitives.
+// streaming notifications back to Amplink primitives.
 //
 // Codex notification events (from remodex analysis):
 //   turn/started              → turn:start
@@ -197,7 +197,7 @@ export class CodexAdapter extends BaseAdapter {
   }
 
   // ---------------------------------------------------------------------------
-  // Message router — Codex JSON-RPC notifications → Plexus primitives
+  // Message router — Codex JSON-RPC notifications → Amplink primitives
   // ---------------------------------------------------------------------------
 
   private handleCodexMessage(msg: CodexRPCMessage): void {

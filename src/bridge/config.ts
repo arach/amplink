@@ -1,8 +1,8 @@
-// Bridge configuration — loads from ~/.plexus/config.json with CLI overrides.
+// Bridge configuration — loads from ~/.amplink/config.json with CLI overrides.
 //
 // Layering order (later wins):
 //   1. Built-in defaults
-//   2. ~/.plexus/config.json
+//   2. ~/.amplink/config.json
 //   3. CLI flags
 
 import { existsSync, readFileSync } from "fs";
@@ -34,7 +34,7 @@ export interface WorkspaceConfig {
   root: string;
 }
 
-export interface PlexusConfig {
+export interface AmplinkConfig {
   /** Relay WebSocket URL (e.g. "ws://relay.example.com:7889"). */
   relay?: string;
   /** Enable Noise encryption on local WebSocket connections. */
@@ -53,7 +53,7 @@ export interface PlexusConfig {
 // Defaults
 // ---------------------------------------------------------------------------
 
-const DEFAULTS: PlexusConfig = {
+const DEFAULTS: AmplinkConfig = {
   port: 7888,
   secure: false,
 };
@@ -62,7 +62,7 @@ const DEFAULTS: PlexusConfig = {
 // Config file path
 // ---------------------------------------------------------------------------
 
-const CONFIG_DIR = join(homedir(), ".plexus");
+const CONFIG_DIR = join(homedir(), ".amplink");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 export { CONFIG_FILE };
@@ -72,17 +72,17 @@ export { CONFIG_FILE };
 // ---------------------------------------------------------------------------
 
 /**
- * Load config from ~/.plexus/config.json, returning defaults for any missing
+ * Load config from ~/.amplink/config.json, returning defaults for any missing
  * fields. Returns the raw file values so CLI can overlay on top.
  */
-export function loadConfigFile(): Partial<PlexusConfig> {
+export function loadConfigFile(): Partial<AmplinkConfig> {
   if (!existsSync(CONFIG_FILE)) {
     return {};
   }
 
   try {
     const raw = readFileSync(CONFIG_FILE, "utf8");
-    const parsed = JSON.parse(raw) as Partial<PlexusConfig>;
+    const parsed = JSON.parse(raw) as Partial<AmplinkConfig>;
     return parsed;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -109,8 +109,8 @@ function hasFlag(flag: string): boolean {
 // Parse CLI flags into a partial config
 // ---------------------------------------------------------------------------
 
-export function parseCLIFlags(): Partial<PlexusConfig> & { pair?: boolean } {
-  const flags: Partial<PlexusConfig> & { pair?: boolean } = {};
+export function parseCLIFlags(): Partial<AmplinkConfig> & { pair?: boolean } {
+  const flags: Partial<AmplinkConfig> & { pair?: boolean } = {};
 
   const portStr = getArg("--port");
   if (portStr !== undefined) {
@@ -132,14 +132,14 @@ export function parseCLIFlags(): Partial<PlexusConfig> & { pair?: boolean } {
 // Resolve final config: defaults <- file <- CLI
 // ---------------------------------------------------------------------------
 
-export interface ResolvedConfig extends PlexusConfig {
+export interface ResolvedConfig extends AmplinkConfig {
   /** --pair flag: just show QR and wait, don't start sessions. */
   pair: boolean;
 }
 
 export function resolveConfigLayers(
-  file: Partial<PlexusConfig>,
-  cli: Partial<PlexusConfig> & { pair?: boolean },
+  file: Partial<AmplinkConfig>,
+  cli: Partial<AmplinkConfig> & { pair?: boolean },
 ): ResolvedConfig {
   return {
     port: cli.port ?? file.port ?? DEFAULTS.port,

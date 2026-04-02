@@ -6,7 +6,7 @@
 
 ## Problem
 
-When an AI agent edits a file, Plexus currently shows it as an action block with `kind: "file_change"`, a `path`, and an optional `diff` string. The diff is opaque text — the phone can display it, but can't do anything useful with it. No syntax highlighting by hunk, no expand/collapse, no way to comment on a specific change and send that feedback back to the agent.
+When an AI agent edits a file, Amplink currently shows it as an action block with `kind: "file_change"`, a `path`, and an optional `diff` string. The diff is opaque text — the phone can display it, but can't do anything useful with it. No syntax highlighting by hunk, no expand/collapse, no way to comment on a specific change and send that feedback back to the agent.
 
 This matters because code review is the highest-value interaction in AI-assisted development. The agent writes code; the human reviews it. If the review surface is "here's a wall of text," you'll go back to your laptop. If it's "tap this hunk to comment, your feedback goes straight to the agent," you stay on the phone.
 
@@ -168,4 +168,4 @@ Most chat completion APIs don't produce diffs natively. The adapter can:
 2. **Binary files.** For image diffs (e.g., an agent regenerating a PNG), should there be a binary diff representation? Or is the `FileBlock` type sufficient for that?
 3. **Multi-file changes.** Some agent actions touch multiple files atomically (e.g., a refactoring). Should there be a way to group multiple `file_change` action blocks into a single reviewable changeset? Or is that a phone-side grouping concern?
 4. **Review state.** Should the protocol track whether a file change has been "reviewed" vs. "pending review"? This could be useful for a review dashboard, but adds state management complexity.
-5. **Hunk parsing library.** Should Plexus ship a shared `parseDiff()` utility that adapters can use? Or leave it to each adapter? A shared utility would ensure consistent `DiffHunk` output across adapters.
+5. **Hunk parsing library.** Should Amplink ship a shared `parseDiff()` utility that adapters can use? Or leave it to each adapter? A shared utility would ensure consistent `DiffHunk` output across adapters.

@@ -1,6 +1,6 @@
-// State tracker — accumulates session state from streaming Plexus events.
+// State tracker — accumulates session state from streaming Amplink events.
 //
-// The bridge feeds every PlexusEvent into the tracker.  At any point, a client
+// The bridge feeds every AmplinkEvent into the tracker.  At any point, a client
 // can request a full snapshot (all turns + accumulated block content) to
 // recover state after reconnect.  This is the "pull" complement to the "push"
 // event stream.
@@ -10,7 +10,7 @@
 import type {
   ActionBlock,
   Block,
-  PlexusEvent,
+  AmplinkEvent,
   Session,
   TextBlock,
   ReasoningBlock,
@@ -75,6 +75,16 @@ export class StateTracker {
     return this.states.get(sessionId) ?? null;
   }
 
+  /** Return one tracked turn for a session. */
+  getTurnState(sessionId: string, turnId: string): TurnState | null {
+    const state = this.states.get(sessionId);
+    if (!state) {
+      return null;
+    }
+
+    return state.turns.find((turn) => turn.id === turnId) ?? null;
+  }
+
   /** Return lightweight summaries for every tracked session. */
   getAllSessionSummaries(): SessionSummary[] {
     const summaries: SessionSummary[] = [];
@@ -103,8 +113,8 @@ export class StateTracker {
     return summaries;
   }
 
-  /** Process one Plexus event and update internal state. */
-  trackEvent(sessionId: string, event: PlexusEvent): void {
+  /** Process one Amplink event and update internal state. */
+  trackEvent(sessionId: string, event: AmplinkEvent): void {
     const state = this.states.get(sessionId);
     if (!state) return;
 
@@ -164,7 +174,7 @@ export class StateTracker {
 
   private handleTurnStart(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "turn:start" }>,
+    event: Extract<AmplinkEvent, { event: "turn:start" }>,
   ): void {
     const turn: TurnState = {
       id: event.turn.id,
@@ -178,7 +188,7 @@ export class StateTracker {
 
   private handleTurnEnd(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "turn:end" }>,
+    event: Extract<AmplinkEvent, { event: "turn:end" }>,
   ): void {
     const turn = this.findTurn(state, event.turnId);
     if (!turn) return;
@@ -210,7 +220,7 @@ export class StateTracker {
 
   private handleTurnError(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "turn:error" }>,
+    event: Extract<AmplinkEvent, { event: "turn:error" }>,
   ): void {
     const turn = this.findTurn(state, event.turnId);
     if (!turn) return;
@@ -229,7 +239,7 @@ export class StateTracker {
 
   private handleBlockStart(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "block:start" }>,
+    event: Extract<AmplinkEvent, { event: "block:start" }>,
   ): void {
     const turn = this.findTurn(state, event.turnId);
     if (!turn) return;
@@ -244,7 +254,7 @@ export class StateTracker {
 
   private handleBlockTextDelta(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "block:delta" }>,
+    event: Extract<AmplinkEvent, { event: "block:delta" }>,
   ): void {
     const blockState = this.findBlock(state, event.turnId, event.blockId);
     if (!blockState) return;
@@ -261,7 +271,7 @@ export class StateTracker {
 
   private handleBlockActionOutput(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "block:action:output" }>,
+    event: Extract<AmplinkEvent, { event: "block:action:output" }>,
   ): void {
     const blockState = this.findBlock(state, event.turnId, event.blockId);
     if (!blockState) return;
@@ -274,7 +284,7 @@ export class StateTracker {
 
   private handleBlockActionStatus(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "block:action:status" }>,
+    event: Extract<AmplinkEvent, { event: "block:action:status" }>,
   ): void {
     const blockState = this.findBlock(state, event.turnId, event.blockId);
     if (!blockState) return;
@@ -287,7 +297,7 @@ export class StateTracker {
 
   private handleBlockActionApproval(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "block:action:approval" }>,
+    event: Extract<AmplinkEvent, { event: "block:action:approval" }>,
   ): void {
     const blockState = this.findBlock(state, event.turnId, event.blockId);
     if (!blockState) return;
@@ -301,7 +311,7 @@ export class StateTracker {
 
   private handleBlockEnd(
     state: SessionState,
-    event: Extract<PlexusEvent, { event: "block:end" }>,
+    event: Extract<AmplinkEvent, { event: "block:end" }>,
   ): void {
     const blockState = this.findBlock(state, event.turnId, event.blockId);
     if (!blockState) return;

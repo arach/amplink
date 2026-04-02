@@ -1,7 +1,7 @@
 // Bridge — the local orchestrator.
 //
 // Runs on the user's machine.  Manages adapter instances (one per session),
-// collects their Plexus events, and exposes a single WebSocket endpoint for
+// collects their Amplink events, and exposes a single WebSocket endpoint for
 // the relay (or a direct phone connection) to consume.
 //
 // The bridge never touches API keys or provider credentials directly — those
@@ -11,13 +11,13 @@ import type {
   Adapter,
   AdapterConfig,
   AdapterFactory,
-  PlexusEvent,
+  AmplinkEvent,
   Prompt,
   Session,
 } from "../protocol/index.ts";
 import { OutboundBuffer, type SequencedEvent } from "./buffer.ts";
 import { StateTracker } from "./state.ts";
-import type { SessionState, SessionSummary } from "./state.ts";
+import type { SessionState, SessionSummary, TurnState } from "./state.ts";
 import { log } from "./log.ts";
 
 // ---------------------------------------------------------------------------
@@ -70,6 +70,19 @@ export class Bridge {
       options: options?.options,
     };
 
+    // Detect git branch in the session's cwd.
+    let branch: string | undefined;
+    try {
+      const result = Bun.spawnSync(["git", "rev-parse", "--abbrev-ref", "HEAD"], {
+        cwd: config.cwd,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      if (result.exitCode === 0) {
+        branch = new TextDecoder().decode(result.stdout).trim();
+      }
+    } catch { /* not a git repo */ }
+
     const adapter = factory(config);
 
     // Wire adapter events to state tracker, buffer, and broadcast.
@@ -78,7 +91,7 @@ export class Bridge {
       this.broadcast(e);
     });
     adapter.on("error", (err) => {
-      const errorEvent: PlexusEvent = {
+      const errorEvent: AmplinkEvent = {
         event: "session:update",
         session: { ...adapter.session, status: "error" },
       };
@@ -86,6 +99,14 @@ export class Bridge {
       this.broadcast(errorEvent);
       console.error(`[bridge] adapter error (${sessionId}):`, err.message);
     });
+
+    // Inject metadata into session.
+    if (branch) {
+      adapter.session.providerMeta = {
+        ...adapter.session.providerMeta,
+        branch,
+      };
+    }
 
     this.sessions.set(sessionId, adapter);
 
@@ -125,7 +146,7 @@ export class Bridge {
     if (!adapter) return;
     await adapter.shutdown();
     this.sessions.delete(sessionId);
-    const closedEvent: PlexusEvent = { event: "session:closed", sessionId };
+    const closedEvent: AmplinkEvent = { event: "session:closed", sessionId };
     this.stateTracker.trackEvent(sessionId, closedEvent);
     this.broadcast(closedEvent);
     this.stateTracker.removeSession(sessionId);
@@ -164,6 +185,11 @@ export class Bridge {
     return this.stateTracker.getSessionState(sessionId);
   }
 
+  /** Return one tracked turn for a session. */
+  getTurnSnapshot(sessionId: string, turnId: string): TurnState | null {
+    return this.stateTracker.getTurnState(sessionId, turnId);
+  }
+
   /** Return lightweight summaries of all active sessions. */
   getSessionSummaries(): SessionSummary[] {
     return this.stateTracker.getAllSessionSummaries();
@@ -171,7 +197,7 @@ export class Bridge {
 
   // -- Event distribution ---------------------------------------------------
 
-  /** Subscribe to all Plexus events from all sessions (receives SequencedEvents). */
+  /** Subscribe to all Amplink events from all sessions (receives SequencedEvents). */
   onEvent(listener: (event: SequencedEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -192,7 +218,7 @@ export class Bridge {
     return this.buffer.oldestSeq();
   }
 
-  private broadcast(event: PlexusEvent): void {
+  private broadcast(event: AmplinkEvent): void {
     const seq = this.buffer.push(event);
     if (event.event !== "block:delta") {
       log.debug("event", `seq=${seq} ${event.event} → ${this.listeners.size} listener(s)`);

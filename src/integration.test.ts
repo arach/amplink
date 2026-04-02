@@ -1,14 +1,14 @@
-// End-to-end integration tests for the Plexus pipeline.
+// End-to-end integration tests for the Amplink pipeline.
 //
 // Verifies the full flow: Bridge + echo adapter + WebSocket server + client.
 // Uses Bun's built-in WebSocket client to simulate a phone connecting to the
-// bridge, sending RPCs, and receiving streamed Plexus events.
+// bridge, sending RPCs, and receiving streamed Amplink events.
 
 import { describe, test, expect, afterEach } from "bun:test";
 import { Bridge } from "./bridge/bridge.ts";
 import { startBridgeServer } from "./bridge/server.ts";
 import { createAdapter as createEcho } from "./adapters/echo.ts";
-import type { PlexusEvent } from "./protocol/primitives.ts";
+import type { AmplinkEvent } from "./protocol/primitives.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,7 +19,7 @@ interface WireMessage {
   result?: unknown;
   error?: { code: number; message: string };
   seq?: number;
-  event?: PlexusEvent;
+  event?: AmplinkEvent;
 }
 
 /** Open a WebSocket to the bridge and return helpers for interacting with it. */
@@ -27,7 +27,7 @@ function connectClient(port: number): Promise<{
   ws: WebSocket;
   messages: WireMessage[];
   rpc: (method: string, params?: unknown) => Promise<WireMessage>;
-  waitForEvent: (predicate: (events: PlexusEvent[]) => boolean, timeoutMs?: number) => Promise<PlexusEvent[]>;
+  waitForEvent: (predicate: (events: AmplinkEvent[]) => boolean, timeoutMs?: number) => Promise<AmplinkEvent[]>;
   close: () => void;
 }> {
   return new Promise((resolve, reject) => {
@@ -72,9 +72,9 @@ function connectClient(port: number): Promise<{
         },
 
         async waitForEvent(
-          predicate: (events: PlexusEvent[]) => boolean,
+          predicate: (events: AmplinkEvent[]) => boolean,
           timeoutMs = 5000,
-        ): Promise<PlexusEvent[]> {
+        ): Promise<AmplinkEvent[]> {
           const deadline = Date.now() + timeoutMs;
           while (true) {
             const events = messages.filter((m) => m.event).map((m) => m.event!);
@@ -458,7 +458,7 @@ describe("End-to-end pipeline", () => {
     // Get replay from seq 0.
     const replayRes = await client.rpc("sync/replay", { lastSeq: 0 });
     expect(replayRes.error).toBeUndefined();
-    const result = replayRes.result as { events: Array<{ seq: number; event: PlexusEvent }> };
+    const result = replayRes.result as { events: Array<{ seq: number; event: AmplinkEvent }> };
     expect(result.events.length).toBeGreaterThan(0);
 
     // Check that replayed events include the expected types.

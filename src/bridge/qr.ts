@@ -34,7 +34,7 @@ export function printQRCode(payload: QRPayload): void {
   const expiresIn = Math.max(0, Math.round((payload.expiresAt - Date.now()) / 1000));
 
   console.log("");
-  console.log("  Scan this QR code with the Plexus app to pair:");
+  console.log("  Scan this QR code with the Amplink app to pair:");
   console.log("");
   // Indent each line for visual centering
   for (const line of qr.split("\n")) {

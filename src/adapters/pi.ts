@@ -176,7 +176,7 @@ export class PiAdapter extends BaseAdapter {
   }
 
   // ---------------------------------------------------------------------------
-  // Event router — Pi RPC events → Plexus primitives
+  // Event router — Pi RPC events → Amplink primitives
   // ---------------------------------------------------------------------------
 
   private handleEvent(event: any): void {

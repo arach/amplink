@@ -1,0 +1,374 @@
+#!/bin/bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+IOS_DIR="$REPO_ROOT/ios"
+PROJECT="$IOS_DIR/Amplink.xcodeproj"
+SCHEME="Amplink"
+BUNDLE_ID="com.amplink.Amplink"
+DEV_DIR="$REPO_ROOT/.dev"
+DEVICE_FILE="$DEV_DIR/device"
+mkdir -p "$DEV_DIR"
+
+# Colors
+R="\033[0m" DIM="\033[90m" GREEN="\033[32m" YELLOW="\033[33m" CYAN="\033[36m" RED="\033[31m" BOLD="\033[1m"
+
+# ---------------------------------------------------------------------------
+# Device resolution
+# ---------------------------------------------------------------------------
+
+resolve_device_id() {
+  local hint="${1:-}"
+
+  # Explicit hint overrides cache
+  if [[ -n "$hint" ]]; then
+    local id
+    id=$(xcrun devicectl list devices 2>/dev/null | grep -i "$hint" | awk '{print $3}' | head -1)
+    if [[ -n "$id" ]]; then
+      echo "$id" > "$DEVICE_FILE"
+    fi
+    echo "$id"
+    return
+  fi
+
+  # Use cached device if still connected
+  if [[ -f "$DEVICE_FILE" ]]; then
+    local cached
+    cached=$(cat "$DEVICE_FILE")
+    if xcrun devicectl list devices 2>/dev/null | grep -q "$cached"; then
+      echo "$cached"
+      return
+    fi
+  fi
+
+  # Auto-detect first connected device and cache it
+  local id
+  id=$(xcrun devicectl list devices 2>/dev/null | grep "connected" | awk '{print $3}' | head -1)
+  if [[ -n "$id" ]]; then
+    echo "$id" > "$DEVICE_FILE"
+  fi
+  echo "$id"
+}
+
+resolve_sim_id() {
+  local hint="${1:-}"
+  if [[ -n "$hint" ]]; then
+    xcrun simctl list devices available | grep -i "$hint" | grep -oE '[A-F0-9-]{36}' | head -1
+  else
+    xcrun simctl list devices booted | grep -oE '[A-F0-9-]{36}' | head -1
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Find latest build product
+# ---------------------------------------------------------------------------
+
+find_app() {
+  local platform="$1"  # iphoneos or iphonesimulator
+  local derived="$HOME/Library/Developer/Xcode/DerivedData"
+  find "$derived" -maxdepth 5 \
+    -path "*/Amplink-*/Build/Products/Debug-${platform}/Amplink.app" \
+    -type d 2>/dev/null | head -1
+}
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+
+cmd_build() {
+  local target="${1:-phone}"
+
+  case "$target" in
+    phone|device|iphone)
+      echo -e "  ${BOLD}Building for device...${R}"
+      cd "$IOS_DIR"
+      xcodebuild -project "$PROJECT" -scheme "$SCHEME" \
+        -destination 'generic/platform=iOS' \
+        -configuration Debug \
+        build 2>&1 | tail -5
+      ;;
+    sim|simulator)
+      local sim_id
+      sim_id=$(resolve_sim_id "${2:-}")
+      if [[ -z "$sim_id" ]]; then
+        echo -e "  ${YELLOW}No simulator found.${R} Boot one first."
+        exit 1
+      fi
+      echo -e "  ${BOLD}Building for simulator...${R}"
+      cd "$IOS_DIR"
+      xcodebuild -project "$PROJECT" -scheme "$SCHEME" \
+        -destination "platform=iOS Simulator,id=$sim_id" \
+        -configuration Debug \
+        build 2>&1 | tail -5
+      ;;
+    backend|ts)
+      echo -e "  ${BOLD}Typechecking backend...${R}"
+      cd "$REPO_ROOT"
+      bun run typecheck
+      echo -e "  ${GREEN}✓${R} Backend types clean"
+      ;;
+    *)
+      echo "  Usage: amplink-dev build [phone|sim|backend]"
+      exit 1
+      ;;
+  esac
+}
+
+cmd_deploy() {
+  local device_id
+  device_id=$(resolve_device_id "${1:-}")
+
+  if [[ -z "$device_id" ]]; then
+    echo -e "  ${YELLOW}No connected device found.${R}"
+    echo "  Plug in your iPhone and try again."
+    exit 1
+  fi
+
+  # Build first
+  echo -e "  ${BOLD}Building for device...${R}"
+  cd "$IOS_DIR"
+  xcodebuild -project "$PROJECT" -scheme "$SCHEME" \
+    -destination "generic/platform=iOS" \
+    -configuration Debug \
+    build 2>&1 | tail -3
+
+  local app_path
+  app_path=$(find_app "iphoneos")
+  if [[ -z "$app_path" ]]; then
+    echo -e "  ${RED}✗${R} No .app found in DerivedData after build"
+    exit 1
+  fi
+
+  echo -e "  ${BOLD}Installing on device...${R} ${DIM}($device_id)${R}"
+  xcrun devicectl device install app --device "$device_id" "$app_path" 2>&1
+
+  echo -e "  ${GREEN}✓${R} Installed. Launching..."
+  xcrun devicectl device process launch --device "$device_id" "$BUNDLE_ID" 2>&1 || true
+
+  echo -e "  ${GREEN}Done.${R}"
+}
+
+cmd_sim() {
+  local subcmd="${1:-install}"
+  shift || true
+
+  case "$subcmd" in
+    install)
+      local sim_id
+      sim_id=$(resolve_sim_id "${1:-}")
+      if [[ -z "$sim_id" ]]; then
+        echo -e "  ${YELLOW}No booted simulator.${R} Boot one: amplink-dev sim boot"
+        exit 1
+      fi
+
+      local app_path
+      app_path=$(find_app "iphonesimulator")
+      if [[ -z "$app_path" ]]; then
+        echo -e "  ${YELLOW}No simulator build found.${R} Run: amplink-dev build sim"
+        exit 1
+      fi
+
+      echo -e "  Installing on simulator ${DIM}($sim_id)${R}..."
+      xcrun simctl install "$sim_id" "$app_path"
+      echo -e "  ${GREEN}✓${R} Installed"
+
+      echo -e "  Launching..."
+      xcrun simctl launch "$sim_id" "$BUNDLE_ID" || true
+      echo -e "  ${GREEN}Done.${R}"
+      ;;
+
+    boot)
+      local hint="${1:-iPhone 17 Pro}"
+      local udid
+      udid=$(xcrun simctl list devices available | grep -i "$hint" | grep -oE '[A-F0-9-]{36}' | head -1)
+      if [[ -z "$udid" ]]; then
+        echo -e "  ${YELLOW}No simulator matching \"$hint\"${R}"
+        exit 1
+      fi
+      xcrun simctl boot "$udid" 2>/dev/null || true
+      open -a Simulator
+      echo -e "  ${GREEN}Booted.${R}"
+      ;;
+
+    list)
+      xcrun simctl list devices booted
+      ;;
+
+    logs)
+      local sim_id
+      sim_id=$(resolve_sim_id "${1:-}")
+      if [[ -z "$sim_id" ]]; then
+        echo -e "  ${YELLOW}No booted simulator.${R}"
+        exit 1
+      fi
+      echo -e "  Streaming Amplink logs... ${DIM}Ctrl+C to stop${R}"
+      xcrun simctl spawn "$sim_id" log stream --debug \
+        --predicate 'process CONTAINS "Amplink"' \
+        --style compact
+      ;;
+
+    *)
+      echo "  Usage: amplink-dev sim [install|boot|list|logs]"
+      ;;
+  esac
+}
+
+cmd_bridge() {
+  echo -e "  ${CYAN}Starting bridge...${R}"
+  cd "$REPO_ROOT"
+  exec bun run bridge -- "$@"
+}
+
+cmd_relay() {
+  echo -e "  ${CYAN}Starting relay...${R}"
+  cd "$REPO_ROOT"
+  exec bun run relay -- "$@"
+}
+
+cmd_start() {
+  echo -e "  ${CYAN}Starting relay + bridge...${R}"
+  cd "$REPO_ROOT"
+
+  # Start relay in background
+  bun run relay -- "$@" &
+  local relay_pid=$!
+  sleep 0.5
+
+  # Start bridge in foreground
+  trap "kill $relay_pid 2>/dev/null; exit" INT TERM
+  bun run bridge -- "$@"
+}
+
+cmd_test() {
+  echo -e "  ${BOLD}Running backend tests...${R}"
+  cd "$REPO_ROOT"
+  bun test "$@"
+}
+
+cmd_status() {
+  echo ""
+  echo -e "  ${BOLD}amplink status${R}"
+  echo -e "  ─────────────────────────────────"
+
+  # Backend
+  local bridge_pid relay_pid
+  bridge_pid=$(pgrep -f "src/bridge/main.ts" 2>/dev/null | head -1 || true)
+  relay_pid=$(pgrep -f "src/relay/main.ts" 2>/dev/null | head -1 || true)
+
+  if [[ -n "$bridge_pid" ]]; then
+    echo -e "  bridge  : ${GREEN}running${R} ${DIM}(pid $bridge_pid)${R}"
+  else
+    echo -e "  bridge  : ${DIM}stopped${R}"
+  fi
+
+  if [[ -n "$relay_pid" ]]; then
+    echo -e "  relay   : ${GREEN}running${R} ${DIM}(pid $relay_pid)${R}"
+  else
+    echo -e "  relay   : ${DIM}stopped${R}"
+  fi
+
+  # Device
+  local device
+  device=$(xcrun devicectl list devices 2>/dev/null | grep "connected" | awk '{print $1, $2}' | head -1)
+  if [[ -n "$device" ]]; then
+    echo -e "  device  : ${GREEN}$device${R}"
+  else
+    echo -e "  device  : ${DIM}none${R}"
+  fi
+
+  # Simulator
+  local sim
+  sim=$(xcrun simctl list devices booted 2>/dev/null | grep "Booted" | head -1 | sed 's/ (Booted)//' | xargs || true)
+  if [[ -n "$sim" ]]; then
+    echo -e "  sim     : ${GREEN}$sim${R}"
+  else
+    echo -e "  sim     : ${DIM}none${R}"
+  fi
+
+  echo -e "  ─────────────────────────────────"
+  echo ""
+}
+
+cmd_logs() {
+  local target="${1:-device}"
+
+  case "$target" in
+    sim|simulator)
+      local sim_id
+      sim_id=$(resolve_sim_id "${2:-}")
+      if [[ -z "$sim_id" ]]; then
+        echo -e "  ${YELLOW}No booted simulator.${R}"
+        exit 1
+      fi
+      echo -e "  Streaming Amplink logs (simulator)... ${DIM}Ctrl+C to stop${R}"
+      echo ""
+      xcrun simctl spawn "$sim_id" log stream --debug \
+        --predicate 'process CONTAINS "Amplink"' \
+        --style compact
+      ;;
+    device|phone|*)
+      echo -e "  Opening Console.app for device logs..."
+      echo -e "  ${DIM}Tip: Select your iPhone in the sidebar, filter by \"Amplink\"${R}"
+      echo ""
+
+      # Open Console.app — the only reliable way to stream device os_log on modern macOS.
+      # Apple's CLI tools (idevicesyslog, devicectl) don't support CoreDevice log streaming.
+      open -a Console
+      ;;
+  esac
+}
+
+cmd_regen() {
+  echo -e "  Regenerating Xcode project..."
+  cd "$IOS_DIR"
+  xcodegen generate
+  echo -e "  ${GREEN}✓${R} Amplink.xcodeproj updated"
+}
+
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+
+case "${1:-help}" in
+  build)    shift; cmd_build "$@" ;;
+  deploy)   shift; cmd_deploy "$@" ;;
+  iphone)   shift; cmd_deploy "$@" ;;   # alias
+  sim)      shift; cmd_sim "$@" ;;
+  bridge)   shift; cmd_bridge "$@" ;;
+  relay)    shift; cmd_relay "$@" ;;
+  start)    shift; cmd_start "$@" ;;
+  test)     shift; cmd_test "$@" ;;
+  status)   cmd_status ;;
+  logs)     shift; cmd_logs "$@" ;;
+  regen)    cmd_regen ;;
+  help|--help|-h)
+    echo ""
+    echo -e "  ${BOLD}amplink-dev${R} — dev workflow for Amplink"
+    echo ""
+    echo "  commands:"
+    echo "    build [phone|sim|backend]   Build iOS app or typecheck backend"
+    echo "    deploy [device]             Build + install + launch on iPhone"
+    echo "    iphone [device]             Alias for deploy"
+    echo "    sim install|boot|list|logs  Simulator tools"
+    echo "    bridge [flags]              Start the bridge"
+    echo "    relay [flags]               Start the relay"
+    echo "    start [flags]               Start relay + bridge together"
+    echo "    test [args]                 Run backend tests"
+    echo "    status                      Show what's running"
+    echo "    logs [device]               Stream device logs"
+    echo "    regen                       Regenerate Xcode project"
+    echo ""
+    echo "  examples:"
+    echo "    amplink-dev deploy                    # build + ship to iPhone"
+    echo "    amplink-dev build sim                 # build for simulator"
+    echo "    amplink-dev sim install               # install last sim build"
+    echo "    amplink-dev start --relay wss://r:7889  # start everything"
+    echo "    amplink-dev logs                      # tail iPhone logs"
+    echo ""
+    ;;
+  *)
+    echo -e "  ${YELLOW}Unknown command: $1${R}"
+    echo "  Run: amplink-dev help"
+    exit 1
+    ;;
+esac

@@ -15,7 +15,7 @@ import {
   type SocketLike,
   type KeyPair,
 } from "./index.ts";
-import type { PlexusEvent } from "../protocol/primitives.ts";
+import type { AmplinkEvent } from "../protocol/primitives.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,7 +26,7 @@ interface WireMessage {
   result?: unknown;
   error?: { code: number; message: string };
   seq?: number;
-  event?: PlexusEvent;
+  event?: AmplinkEvent;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ function connectSecureClient(
 ): Promise<{
   messages: WireMessage[];
   rpc: (method: string, params?: unknown) => Promise<WireMessage>;
-  waitForEvent: (predicate: (events: PlexusEvent[]) => boolean, timeoutMs?: number) => Promise<PlexusEvent[]>;
+  waitForEvent: (predicate: (events: AmplinkEvent[]) => boolean, timeoutMs?: number) => Promise<AmplinkEvent[]>;
   close: () => void;
 }> {
   return new Promise((resolve, reject) => {
@@ -106,9 +106,9 @@ function connectSecureClient(
               },
 
               async waitForEvent(
-                predicate: (events: PlexusEvent[]) => boolean,
+                predicate: (events: AmplinkEvent[]) => boolean,
                 timeoutMs = 5000,
-              ): Promise<PlexusEvent[]> {
+              ): Promise<AmplinkEvent[]> {
                 const deadline = Date.now() + timeoutMs;
                 while (true) {
                   const events = messages.filter((m) => m.event).map((m) => m.event!);

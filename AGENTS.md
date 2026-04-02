@@ -1,18 +1,18 @@
-# Plexus
+# Amplink
 
 Universal mobile viewport for AI coding sessions. One app, N agents, zero credentials.
 
 ## Architecture
 
 ```
-Phone (renders Plexus primitives)
+Phone (renders Amplink primitives)
   ↕ encrypted WebSocket (Noise XX/IK)
 Relay (forwards opaque bytes, zero-knowledge)
   ↕ WebSocket
 Bridge (runs on user's machine, manages adapters)
   ├── Codex adapter  ← stdio (reference implementation)
   ├── openai-compat adapter ← HTTPS (covers GPT, Groq, Together, LM Studio, etc.)
-  └── community adapters   ← anything that emits Plexus primitives
+  └── community adapters   ← anything that emits Amplink primitives
 ```
 
 ## Core concepts
@@ -21,7 +21,7 @@ Bridge (runs on user's machine, manages adapters)
 - **Turn** — one request/response cycle
 - **Block** — unit of content: `text`, `reasoning`, `action`, `file`, `error`
 - **Delta** — streaming update to a block (`block:start` → `block:delta` → `block:end`)
-- **Adapter** — maps any backend's native events to Plexus primitives
+- **Adapter** — maps any backend's native events to Amplink primitives
 
 Primitives are aligned with Vercel AI SDK LanguageModelV3 content types.
 
@@ -72,17 +72,17 @@ See `PLAN.md` for the full implementation plan with parallel workstreams.
 
 ## Design principles
 
-- Plexus is a viewport, not a platform — it never touches API keys or credentials
+- Amplink is a viewport, not a platform — it never touches API keys or credentials
 - The bridge runs on the user's machine; all sensitive data stays local
 - The relay forwards opaque encrypted bytes; it can't read payloads
-- Adapters are plugins; the community builds them, Plexus defines the primitive contract
+- Adapters are plugins; the community builds them, Amplink defines the primitive contract
 - Primitives are the product — if your thing emits valid blocks, the phone renders it
 
 ## Adding an adapter
 
 Implement the `Adapter` interface from `src/protocol/adapter.ts` or extend `BaseAdapter`. Your adapter must:
 1. Translate user `Prompt` into whatever the native backend expects
-2. Emit Plexus events (`turn:start`, `block:start`, `block:delta`, `block:end`, `turn:end`) as the response streams in
+2. Emit Amplink events (`turn:start`, `block:start`, `block:delta`, `block:end`, `turn:end`) as the response streams in
 3. Handle `interrupt()` and `shutdown()` cleanly
 
 Register it in `src/bridge/main.ts` and it works.

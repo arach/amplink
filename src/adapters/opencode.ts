@@ -1,20 +1,25 @@
-// OpenCode adapter — persistent process with JSON event streaming.
+// OpenCode adapter — persistent headless server.
 //
-// Spawns `opencode run --format json` for each turn. Between turns, uses
-// `--continue` or `--session <id>` to maintain conversation continuity.
+// Spawns `opencode serve` once on start(), connects via HTTP + SSE for the
+// lifetime of the session. Sends prompts via POST, receives streaming events
+// via the SSE event bus.
 //
-// OpenCode JSON events:
-//   step_start    → turn phase begins (may have multiple steps per turn)
-//   text          → text content block
-//   tool_use      → tool call with input/output/state
-//   thinking      → reasoning content
-//   step_finish   → turn phase ends (with reason, tokens, cost)
+// API surface:
+//   POST /session                → create session
+//   POST /session/:id/message    → send message (parts array)
+//   GET  /session                → list sessions
+//   GET  /session/:id/message    → get messages
+//   GET  /event?sessionID=:id    → SSE event stream
 //
-// OpenCode also supports `opencode serve` (WebSocket server) and
-// `opencode attach` (connect to running server) for richer integration.
-// This adapter uses the CLI approach for simplicity and faithful harness:
-// the project's .opencode config, plugins, MCP servers, and LSP all load
-// naturally from cwd.
+// Events (SSE):
+//   message.updated       → new/updated message (user or assistant)
+//   message.part.updated  → streaming part (text, tool_use, thinking)
+//   session.status        → busy/idle
+//   session.updated       → session metadata changes
+//   session.diff          → file diffs
+//
+// Faithful harness: opencode serve loads the project's .opencode config,
+// plugins, MCP servers, and LSP from cwd automatically.
 
 import { BaseAdapter } from "../protocol/adapter.ts";
 import type { AdapterConfig } from "../protocol/adapter.ts";
@@ -35,63 +40,63 @@ import type { Subprocess } from "bun";
 export class OpenCodeAdapter extends BaseAdapter {
   readonly type = "opencode";
 
-  private process: Subprocess | null = null;
+  private serverProcess: Subprocess | null = null;
+  private serverPort: number = 0;
+  private serverUrl: string = "";
   private currentTurn: Turn | null = null;
   private blockIndex = 0;
-  private lastSessionId: string | null = null;
+  private openCodeSessionId: string | null = null;
+  private eventSource: AbortController | null = null;
 
-  // Track blocks by part ID for delta correlation.
+  // Track blocks by part ID.
   private blockByPartId = new Map<string, Block>();
-  private currentTextBlock: Block | null = null;
+  private lastSeenRole: string | null = null;
 
   constructor(config: AdapterConfig) {
     super(config);
   }
 
   async start(): Promise<void> {
+    // Pick a random port for the server.
+    this.serverPort = 10000 + Math.floor(Math.random() * 50000);
+    this.serverUrl = `http://127.0.0.1:${this.serverPort}`;
+
+    const args = ["serve", "--port", String(this.serverPort)];
+
+    this.serverProcess = Bun.spawn(["opencode", ...args], {
+      cwd: this.config.cwd,
+      env: { ...process.env, ...this.config.env },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    // Wait for the server to be ready.
+    await this.waitForServer();
+
+    // Create or resume a session.
+    await this.ensureSession();
+
+    // Connect to the SSE event stream.
+    this.connectEventStream();
+
+    this.serverProcess.exited.then((code) => {
+      if (code !== 0 && this.session.status !== "closed") {
+        this.emit("error", new Error(`opencode serve exited with code ${code}`));
+        this.setStatus("error");
+      }
+    });
+
     this.setStatus("active");
   }
 
   send(prompt: Prompt): void {
-    // Each prompt spawns opencode run with JSON output.
-    // Multi-turn continuity via --session or --continue.
-    const args = ["run", "--format", "json"];
-
-    // Model override.
-    const model = this.config.options?.["model"] as string | undefined;
-    if (model) args.push("--model", model);
-
-    // Agent override.
-    const agent = this.config.options?.["agent"] as string | undefined;
-    if (agent) args.push("--agent", agent);
-
-    // Thinking output.
-    args.push("--thinking");
-
-    // Session continuity.
-    if (this.lastSessionId) {
-      args.push("--session", this.lastSessionId);
-    } else {
-      const resume = this.config.options?.["resume"] as boolean | undefined;
-      if (resume) args.push("--continue");
-
-      const sessionId = this.config.options?.["session"] as string | undefined;
-      if (sessionId) args.push("--session", sessionId);
+    if (!this.openCodeSessionId) {
+      this.emit("error", new Error("No OpenCode session"));
+      return;
     }
-
-    // File attachments.
-    if (prompt.files?.length) {
-      for (const f of prompt.files) {
-        args.push("--file", f);
-      }
-    }
-
-    // The message.
-    args.push(prompt.text);
 
     this.blockIndex = 0;
     this.blockByPartId.clear();
-    this.currentTextBlock = null;
 
     const turn: Turn = {
       id: crypto.randomUUID(),
@@ -103,26 +108,38 @@ export class OpenCodeAdapter extends BaseAdapter {
     this.currentTurn = turn;
     this.emit("event", { event: "turn:start", sessionId: this.session.id, turn });
 
-    this.process = Bun.spawn(["opencode", ...args], {
-      cwd: this.config.cwd,
-      env: { ...process.env, ...this.config.env },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+    // Build parts array.
+    const parts: Array<Record<string, unknown>> = [
+      { type: "text", text: prompt.text },
+    ];
 
-    this.readStream(turn);
-
-    this.process.exited.then((code) => {
-      if (code !== 0 && turn.status === "started") {
-        this.emitError(turn, `opencode exited with code ${code}`);
-        this.endTurn(turn, "failed");
+    if (prompt.images?.length) {
+      for (const img of prompt.images) {
+        parts.push({
+          type: "image",
+          mimeType: img.mimeType,
+          data: img.data,
+        });
       }
+    }
+
+    // Fire and forget — events come through SSE.
+    fetch(`${this.serverUrl}/session/${this.openCodeSessionId}/message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parts }),
+    }).catch((err) => {
+      this.emitError(turn, err.message ?? "Failed to send message");
+      this.endTurn(turn, "failed");
     });
   }
 
   interrupt(): void {
-    if (this.process && !this.process.killed) {
-      this.process.kill("SIGINT");
+    // Kill the current generation by sending abort.
+    if (this.openCodeSessionId) {
+      fetch(`${this.serverUrl}/session/${this.openCodeSessionId}/abort`, {
+        method: "POST",
+      }).catch(() => {});
     }
     if (this.currentTurn) {
       this.endTurn(this.currentTurn, "stopped");
@@ -130,23 +147,86 @@ export class OpenCodeAdapter extends BaseAdapter {
   }
 
   async shutdown(): Promise<void> {
-    this.interrupt();
+    this.eventSource?.abort();
+    this.eventSource = null;
+    if (this.serverProcess && !this.serverProcess.killed) {
+      this.serverProcess.kill();
+    }
+    this.serverProcess = null;
     this.setStatus("closed");
   }
 
   // ---------------------------------------------------------------------------
-  // Stream reader
+  // Server lifecycle
   // ---------------------------------------------------------------------------
 
-  private async readStream(turn: Turn): Promise<void> {
-    const stdout = this.process?.stdout;
-    if (!stdout || typeof stdout === "number") return;
+  private async waitForServer(timeoutMs = 15000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      try {
+        const res = await fetch(`${this.serverUrl}/session`);
+        if (res.ok) return;
+      } catch { /* not ready yet */ }
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    throw new Error("OpenCode server did not start in time");
+  }
 
-    const reader = stdout.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+  private async ensureSession(): Promise<void> {
+    // Check for existing sessions to resume.
+    const resume = this.config.options?.["resume"] as boolean | undefined;
+    const sessionId = this.config.options?.["session"] as string | undefined;
 
+    if (sessionId) {
+      this.openCodeSessionId = sessionId;
+      return;
+    }
+
+    if (resume) {
+      const res = await fetch(`${this.serverUrl}/session`);
+      const sessions = (await res.json()) as any[];
+      if (sessions.length > 0) {
+        this.openCodeSessionId = sessions[0].id;
+        return;
+      }
+    }
+
+    // Create a new session.
+    const res = await fetch(`${this.serverUrl}/session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const session = (await res.json()) as any;
+    this.openCodeSessionId = session.id;
+  }
+
+  // ---------------------------------------------------------------------------
+  // SSE event stream
+  // ---------------------------------------------------------------------------
+
+  private connectEventStream(): void {
+    if (!this.openCodeSessionId) return;
+
+    this.eventSource = new AbortController();
+    const url = `${this.serverUrl}/event?sessionID=${this.openCodeSessionId}`;
+
+    this.readSSE(url, this.eventSource.signal);
+  }
+
+  private async readSSE(url: string, signal: AbortSignal): Promise<void> {
     try {
+      const res = await fetch(url, {
+        headers: { Accept: "text/event-stream" },
+        signal,
+      });
+
+      if (!res.ok || !res.body) return;
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -156,180 +236,228 @@ export class OpenCodeAdapter extends BaseAdapter {
         buffer = lines.pop() ?? "";
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            this.handleEvent(turn, JSON.parse(trimmed));
-          } catch { /* skip malformed */ }
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (!data) continue;
+            try {
+              this.handleSSEEvent(JSON.parse(data));
+            } catch { /* skip malformed */ }
+          }
         }
       }
-    } catch { /* stream closed */ }
-
-    // Close any open blocks and end the turn.
-    this.closeOpenBlocks(turn);
-    if (turn.status !== "stopped" && turn.status !== "failed") {
-      this.endTurn(turn, "completed");
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        // Reconnect on error.
+        setTimeout(() => {
+          if (!signal.aborted) this.readSSE(url, signal);
+        }, 2000);
+      }
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Event router — OpenCode JSON events → Plexus primitives
+  // SSE event handling
   // ---------------------------------------------------------------------------
 
-  private handleEvent(turn: Turn, event: any): void {
-    // Capture session ID for continuity.
-    if (event.sessionID && !this.lastSessionId) {
-      this.lastSessionId = event.sessionID;
-      // Update session model from first event if available.
-      if (event.part?.model) {
-        (this.session as any).model = event.part.model;
-      }
-    }
+  private handleSSEEvent(event: any): void {
+    const type: string = event.type ?? "";
+    const props = event.properties ?? {};
 
-    switch (event.type) {
+    switch (type) {
+      case "session.status": {
+        const status = props.status?.type;
+        if (status === "idle" && this.currentTurn) {
+          // Turn completed — session went from busy to idle.
+          this.closeOpenBlocks();
+          this.endTurn(this.currentTurn, "completed");
+        }
+        break;
+      }
+
+      case "message.part.updated": {
+        this.handlePartUpdated(props);
+        break;
+      }
+
+      case "message.updated": {
+        const info = props.info;
+        if (info?.role === "assistant" && info?.modelID) {
+          (this.session as any).model = info.modelID;
+        }
+        break;
+      }
+
+      // session.updated, session.diff — no Amplink mapping needed.
+    }
+  }
+
+  private handlePartUpdated(props: any): void {
+    if (!this.currentTurn) return;
+
+    const part = props.part;
+    if (!part) return;
+
+    const partId: string = part.id ?? "";
+    const partType: string = part.type ?? "";
+
+    switch (partType) {
       case "text": {
-        this.handleText(turn, event);
+        let block = this.blockByPartId.get(partId);
+        if (!block) {
+          block = this.startBlock(this.currentTurn, {
+            type: "text",
+            text: part.text ?? "",
+            status: "streaming",
+          });
+          this.blockByPartId.set(partId, block);
+        } else {
+          // Updated text — emit delta.
+          this.emit("event", {
+            event: "block:delta",
+            sessionId: this.session.id,
+            turnId: this.currentTurn.id,
+            blockId: block.id,
+            text: part.text ?? "",
+          });
+        }
         break;
       }
 
       case "thinking": {
-        this.handleThinking(turn, event);
-        break;
-      }
-
-      case "tool_use": {
-        this.handleToolUse(turn, event);
-        break;
-      }
-
-      case "step_start": {
-        // A new step — could be multi-step within one turn.
-        // We don't create a new Plexus turn for each step; they're
-        // part of the same turn.
-        break;
-      }
-
-      case "step_finish": {
-        // Step done. Close any open text blocks between steps.
-        if (this.currentTextBlock) {
-          this.emitBlockEnd(turn, this.currentTextBlock, "completed");
-          this.currentTextBlock = null;
+        let block = this.blockByPartId.get(partId);
+        if (!block) {
+          block = this.startBlock(this.currentTurn, {
+            type: "reasoning",
+            text: part.text ?? "",
+            status: "streaming",
+          });
+          this.blockByPartId.set(partId, block);
+        } else {
+          this.emit("event", {
+            event: "block:delta",
+            sessionId: this.session.id,
+            turnId: this.currentTurn.id,
+            blockId: block.id,
+            text: part.text ?? "",
+          });
         }
         break;
       }
 
-      case "error": {
-        this.emitError(turn, event.error ?? event.message ?? "Unknown error");
+      case "step-start": {
+        // New reasoning/execution step — informational.
+        break;
+      }
+
+      case "step-finish": {
+        // Step completed. Close streaming blocks from this step.
+        break;
+      }
+
+      case "tool": {
+        let block = this.blockByPartId.get(partId);
+        const state = part.state ?? {};
+        const toolName: string = part.tool ?? "unknown";
+        const callId: string = part.callID ?? partId;
+
+        if (!block) {
+          // New tool use.
+          let action: Action;
+          const input = state.input ?? {};
+          const output: string = state.output ?? "";
+
+          if (toolName === "edit" || toolName === "write" || toolName === "multi_edit") {
+            action = {
+              kind: "file_change",
+              path: input.filePath ?? input.file_path ?? "",
+              diff: output,
+              status: state.status === "completed" ? "completed" : "running",
+              output,
+            };
+          } else if (toolName === "bash") {
+            action = {
+              kind: "command",
+              command: input.command ?? "",
+              exitCode: state.metadata?.exitCode,
+              status: state.status === "completed" ? "completed" : "running",
+              output,
+            };
+          } else {
+            action = {
+              kind: "tool_call",
+              toolName,
+              toolCallId: callId,
+              input,
+              status: state.status === "completed" ? "completed" : "running",
+              output,
+            };
+          }
+
+          block = this.startBlock(this.currentTurn, {
+            type: "action",
+            action,
+            status: state.status === "completed" ? "completed" : "streaming",
+          });
+          this.blockByPartId.set(partId, block);
+
+          if (state.status === "completed") {
+            if (output) {
+              this.emit("event", {
+                event: "block:action:output",
+                sessionId: this.session.id,
+                turnId: this.currentTurn.id,
+                blockId: block.id,
+                output,
+              });
+            }
+            this.emit("event", {
+              event: "block:action:status",
+              sessionId: this.session.id,
+              turnId: this.currentTurn.id,
+              blockId: block.id,
+              status: state.status === "error" ? "failed" : "completed",
+            });
+            this.emitBlockEnd(this.currentTurn, block, state.status === "error" ? "failed" : "completed");
+          }
+        } else {
+          // Updated tool — emit output delta and status change.
+          const output: string = state.output ?? "";
+          if (output) {
+            this.emit("event", {
+              event: "block:action:output",
+              sessionId: this.session.id,
+              turnId: this.currentTurn.id,
+              blockId: block.id,
+              output,
+            });
+          }
+
+          if (state.status === "completed" || state.status === "error") {
+            this.emit("event", {
+              event: "block:action:status",
+              sessionId: this.session.id,
+              turnId: this.currentTurn.id,
+              blockId: block.id,
+              status: state.status === "error" ? "failed" : "completed",
+            });
+            this.emitBlockEnd(this.currentTurn, block, state.status === "error" ? "failed" : "completed");
+          }
+        }
         break;
       }
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Event handlers
-  // ---------------------------------------------------------------------------
-
-  private handleText(turn: Turn, event: any): void {
-    const text = event.part?.text ?? "";
-    const partId = event.part?.id;
-
-    // Each text event is a complete text block in opencode's model.
-    const block = this.startBlock(turn, {
-      type: "text",
-      text,
-      status: "completed",
-    });
-
-    if (partId) this.blockByPartId.set(partId, block);
-    this.emitBlockEnd(turn, block, "completed");
-  }
-
-  private handleThinking(turn: Turn, event: any): void {
-    const text = event.part?.text ?? "";
-
-    const block = this.startBlock(turn, {
-      type: "reasoning",
-      text,
-      status: "completed",
-    });
-    this.emitBlockEnd(turn, block, "completed");
-  }
-
-  private handleToolUse(turn: Turn, event: any): void {
-    const part = event.part ?? {};
-    const toolName: string = part.tool ?? "unknown";
-    const callId: string = part.callID ?? crypto.randomUUID();
-    const state = part.state ?? {};
-    const input = state.input ?? {};
-    const output: string = state.output ?? "";
-    const toolStatus = state.status ?? "completed";
-
-    let action: Action;
-
-    if (toolName === "edit" || toolName === "write" || toolName === "multi_edit") {
-      action = {
-        kind: "file_change",
-        path: input.filePath ?? input.file_path ?? input.path ?? "",
-        diff: output,
-        status: toolStatus === "error" ? "failed" : "completed",
-        output,
-      };
-    } else if (toolName === "bash") {
-      action = {
-        kind: "command",
-        command: input.command ?? "",
-        exitCode: state.metadata?.exitCode,
-        status: toolStatus === "error" ? "failed" : "completed",
-        output,
-      };
-    } else if (toolName === "read" || toolName === "grep" || toolName === "find" || toolName === "ls") {
-      action = {
-        kind: "tool_call",
-        toolName,
-        toolCallId: callId,
-        input,
-        result: output,
-        status: toolStatus === "error" ? "failed" : "completed",
-        output: typeof output === "string" ? output.slice(0, 500) : "",
-      };
-    } else {
-      action = {
-        kind: "tool_call",
-        toolName,
-        toolCallId: callId,
-        input,
-        status: toolStatus === "error" ? "failed" : "completed",
-        output,
-      };
-    }
-
-    const block = this.startBlock(turn, {
-      type: "action",
-      action,
-      status: "completed",
-    });
-
-    if (output) {
-      this.emit("event", {
-        event: "block:action:output",
-        sessionId: this.session.id,
-        turnId: turn.id,
-        blockId: block.id,
-        output,
-      });
-    }
-
-    this.emitBlockEnd(turn, block, toolStatus === "error" ? "failed" : "completed");
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
-  private closeOpenBlocks(turn: Turn): void {
-    if (this.currentTextBlock) {
-      this.emitBlockEnd(turn, this.currentTextBlock, "completed");
-      this.currentTextBlock = null;
+  private closeOpenBlocks(): void {
+    if (!this.currentTurn) return;
+    for (const [, block] of this.blockByPartId) {
+      if (block.status !== "completed" && block.status !== "failed") {
+        this.emitBlockEnd(this.currentTurn, block, "completed");
+      }
     }
     this.blockByPartId.clear();
   }

@@ -1,6 +1,6 @@
-# Plexus Wire Protocol
+# Amplink Wire Protocol
 
-Canonical reference for the Plexus wire protocol. All clients and adapters must conform to this document. When this document and the iOS guide or any other doc disagree, this document wins.
+Canonical reference for the Amplink wire protocol. All clients and adapters must conform to this document. When this document and the iOS guide or any other doc disagree, this document wins.
 
 Source of truth: `src/protocol/primitives.ts`, `src/bridge/server.ts`, `src/bridge/state.ts`, `src/bridge/buffer.ts`, `src/security/transport.ts`.
 
@@ -279,6 +279,6 @@ hasPackageJson:  boolean
 
 ```
 seq:       number
-event:     PlexusEvent
+event:     AmplinkEvent
 timestamp: number (epoch ms)
 ```

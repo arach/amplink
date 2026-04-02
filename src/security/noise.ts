@@ -1,4 +1,4 @@
-// Noise Protocol Framework implementation for Plexus.
+// Noise Protocol Framework implementation for Amplink.
 //
 // Implements the core Noise machinery (CipherState, SymmetricState,
 // HandshakeState) with two patterns:

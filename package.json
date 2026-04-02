@@ -1,23 +1,28 @@
 {
-  "name": "plexus",
+  "name": "amplink",
   "version": "0.1.0",
   "description": "Universal mobile viewport for AI coding sessions",
   "type": "module",
-  "private": true,
   "bin": {
-    "plexus": "./src/cli.ts",
-    "plexus-bridge": "./src/bridge/main.ts",
-    "plexus-relay": "./src/relay/main.ts"
+    "amplink": "src/cli.ts",
+    "amplink-bridge": "src/bridge/main.ts",
+    "amplink-relay": "src/relay/main.ts"
   },
   "scripts": {
-    "plexus": "bun run src/cli.ts",
+    "amplink": "bun run src/cli.ts",
     "bridge": "bun run src/bridge/main.ts",
     "relay": "bun run src/relay/main.ts",
+    "desktop:listen": "bun run desktop-listener.ts",
+    "desktop:up": "bun run scripts/run-desktop-stack.ts",
+    "setup:cloudflare": "bun run src/cli.ts setup cloudflare",
+    "test": "bun test",
+    "test:cloudflare": "bun test cloudflare",
+    "smoke:cloudflare": "bun run scripts/smoke-cloudflare.ts",
     "typecheck": "tsc --noEmit && tsc -p cloudflare/tsconfig.json --noEmit",
     "typecheck:cloudflare": "tsc -p cloudflare/tsconfig.json --noEmit",
-    "cf:types": "wrangler types cloudflare/worker-configuration.d.ts --env-interface CloudflareEnv",
-    "cf:dev": "wrangler dev",
-    "cf:deploy": "wrangler deploy"
+    "cf:types": "bun run scripts/run-wrangler.ts types cloudflare/worker-configuration.d.ts --env-interface CloudflareEnv",
+    "cf:dev": "bun run scripts/run-wrangler.ts dev",
+    "cf:deploy": "bun run scripts/run-wrangler.ts deploy"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -31,5 +36,62 @@
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "uqr": "^0.1.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arach/amplink.git"
+  },
+  "homepage": "https://github.com/arach/amplink#readme",
+  "bugs": {
+    "url": "https://github.com/arach/amplink/issues"
+  },
+  "keywords": [
+    "ai",
+    "coding",
+    "mobile",
+    "cli",
+    "bridge",
+    "relay",
+    "noise",
+    "websocket"
+  ],
+  "preferGlobal": true,
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.3.11"
+  },
+  "files": [
+    "README.md",
+    "PROTOCOL.md",
+    "src/adapters/claude-code.ts",
+    "src/adapters/codex.ts",
+    "src/adapters/echo.ts",
+    "src/adapters/openai-compat.ts",
+    "src/adapters/opencode.ts",
+    "src/adapters/pi.ts",
+    "src/bridge/bridge.ts",
+    "src/bridge/buffer.ts",
+    "src/bridge/config.ts",
+    "src/bridge/fileserver.ts",
+    "src/bridge/log.ts",
+    "src/bridge/main.ts",
+    "src/bridge/qr.ts",
+    "src/bridge/relay-client.ts",
+    "src/bridge/server.ts",
+    "src/bridge/state.ts",
+    "src/cli.ts",
+    "src/protocol/adapter.ts",
+    "src/protocol/dispatch.ts",
+    "src/protocol/index.ts",
+    "src/protocol/primitives.ts",
+    "src/relay/main.ts",
+    "src/relay/relay.ts",
+    "src/security/identity.ts",
+    "src/security/index.ts",
+    "src/security/noise.ts",
+    "src/security/transport.ts",
+    "src/setup/cloudflare.ts"
+  ]
 }
