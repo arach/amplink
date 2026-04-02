@@ -26,32 +26,39 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
     <title>Amplink Voice Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg: #f2eee4;
-        --paper: rgba(255, 250, 241, 0.86);
-        --ink: #241a15;
-        --muted: #6f655d;
-        --accent: #c85f32;
-        --accent-soft: rgba(200, 95, 50, 0.12);
-        --line: rgba(36, 26, 21, 0.1);
-        --shadow: 0 20px 60px rgba(69, 41, 20, 0.12);
+        --bg: #0a0a0a;
+        --paper: #141414;
+        --ink: #e5e5e5;
+        --muted: #737373;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.10);
+        --line: rgba(255, 255, 255, 0.09);
+        --line-strong: rgba(255, 255, 255, 0.14);
+        --shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
       }
 
       * {
         box-sizing: border-box;
       }
 
+      ::selection {
+        background: rgba(56, 189, 248, 0.3);
+        color: white;
+      }
+
       body {
         margin: 0;
         min-height: 100vh;
-        font-family: "Azeret Mono", ui-monospace, monospace;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
         color: var(--ink);
         background:
-          radial-gradient(circle at top left, rgba(200, 95, 50, 0.18), transparent 32%),
-          radial-gradient(circle at right 10% top 20%, rgba(54, 123, 141, 0.16), transparent 28%),
-          linear-gradient(180deg, #f7f2e8 0%, #efe8dc 100%);
+          radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 28%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+          var(--bg);
+        -webkit-font-smoothing: antialiased;
       }
 
       main {
@@ -63,8 +70,8 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       .panel {
         background: var(--paper);
         backdrop-filter: blur(18px);
-        border: 1px solid var(--line);
-        border-radius: 28px;
+        border: 1px solid var(--line-strong);
+        border-radius: 16px;
         box-shadow: var(--shadow);
       }
 
@@ -75,18 +82,19 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       }
 
       .eyebrow {
-        font-size: 12px;
-        letter-spacing: 0.08em;
+        font-size: 10px;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--muted);
+        color: var(--accent);
       }
 
       h1 {
         margin: 0;
-        font-family: "Newsreader", Georgia, serif;
-        font-size: clamp(2.6rem, 7vw, 4.8rem);
+        font-family: "Instrument Serif", Georgia, serif;
+        font-size: clamp(2.4rem, 7vw, 4.2rem);
         line-height: 0.95;
-        font-weight: 700;
+        font-weight: 400;
+        font-style: italic;
       }
 
       .hero p {
@@ -94,6 +102,7 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
         max-width: 60ch;
         color: var(--muted);
         line-height: 1.6;
+        font-size: 13px;
       }
 
       .hero-grid {
@@ -110,12 +119,14 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       }
 
       .chip {
-        padding: 10px 14px;
+        padding: 8px 14px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.66);
+        background: var(--accent-soft);
         border: 1px solid var(--line);
-        color: var(--muted);
-        font-size: 12px;
+        color: var(--accent);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
       .layout {
@@ -145,9 +156,10 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       .section-head h2,
       .section-head h3 {
         margin: 0;
-        font-size: 14px;
+        font-size: 12px;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.14em;
+        color: var(--ink);
       }
 
       .muted {
@@ -157,7 +169,9 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       label {
         display: grid;
         gap: 8px;
-        font-size: 12px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
         color: var(--muted);
       }
 
@@ -166,17 +180,58 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       textarea,
       button {
         font: inherit;
+        font-size: 13px;
+        text-transform: none;
+        letter-spacing: 0;
       }
 
       input,
       select,
       textarea {
         width: 100%;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.76);
+        border: 1px solid var(--line-strong);
+        border-radius: 10px;
+        background: var(--bg);
         color: var(--ink);
-        padding: 14px 16px;
+        padding: 12px 14px;
+        transition: border-color 0.2s;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: rgba(56, 189, 248, 0.4);
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 3px;
+        background: var(--line-strong);
+        border: none;
+        border-radius: 2px;
+        padding: 0;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 2px solid var(--bg);
+      }
+
+      select {
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 36px;
       }
 
       textarea {
@@ -199,11 +254,16 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
 
       .persona-card {
         position: relative;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        background: var(--bg);
         padding: 16px;
         cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+      }
+
+      .persona-card:hover {
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
       .persona-card input {
@@ -217,18 +277,23 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
         display: block;
         margin-bottom: 8px;
         color: var(--ink);
+        font-size: 13px;
       }
 
       .persona-card p {
         margin: 0;
         color: var(--muted);
         line-height: 1.5;
-        font-size: 12px;
+        font-size: 11px;
       }
 
       .persona-card.active {
-        border-color: rgba(200, 95, 50, 0.42);
+        border-color: rgba(56, 189, 248, 0.5);
         background: var(--accent-soft);
+      }
+
+      .persona-card.active strong {
+        color: var(--accent);
       }
 
       .actions {
@@ -240,47 +305,64 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       button {
         border: 0;
         border-radius: 999px;
-        padding: 13px 18px;
+        padding: 11px 18px;
         cursor: pointer;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        transition: opacity 0.2s;
+      }
+
+      button:hover {
+        opacity: 0.85;
       }
 
       .primary {
-        background: var(--ink);
-        color: #f7f2e8;
+        background: var(--accent);
+        color: #0a0a0a;
+        font-weight: 500;
       }
 
       .secondary {
-        background: rgba(255, 255, 255, 0.85);
+        background: transparent;
         color: var(--ink);
-        border: 1px solid var(--line);
+        border: 1px solid var(--line-strong);
+      }
+
+      .secondary:hover {
+        border-color: rgba(56, 189, 248, 0.3);
+        background: var(--accent-soft);
+        opacity: 1;
       }
 
       .preview-box {
         display: grid;
         gap: 14px;
         padding: 18px;
-        border-radius: 22px;
-        background: rgba(255, 255, 255, 0.68);
-        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--bg);
+        border: 1px solid var(--line-strong);
       }
 
       .preview-label {
-        font-size: 11px;
-        letter-spacing: 0.08em;
+        font-size: 10px;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
       .preview-text {
-        font-family: "Newsreader", Georgia, serif;
-        font-size: 28px;
-        line-height: 1.15;
+        font-family: "Instrument Serif", Georgia, serif;
+        font-size: 24px;
+        line-height: 1.2;
+        color: var(--ink);
       }
 
       .status {
         min-height: 20px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
       }
 
       .secret-shell {
@@ -297,10 +379,10 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
         gap: 8px;
         padding: 8px 12px;
         border-radius: 999px;
-        background: rgba(36, 26, 21, 0.06);
-        color: var(--muted);
-        font-size: 11px;
-        letter-spacing: 0.08em;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 10px;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
       }
 
@@ -313,20 +395,21 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
         display: grid;
         gap: 10px;
         padding: 16px;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--bg);
+        border: 1px solid var(--line-strong);
       }
 
       .vault-card strong {
-        font-size: 14px;
+        font-size: 13px;
+        color: var(--ink);
       }
 
       .vault-card p {
         margin: 0;
         color: var(--muted);
         line-height: 1.55;
-        font-size: 12px;
+        font-size: 11px;
       }
 
       .vault-meta {
@@ -336,11 +419,12 @@ export function renderVoiceAdminPage(options: VoiceAdminPageOptions): string {
       }
 
       .vault-pill {
-        padding: 6px 10px;
+        padding: 5px 10px;
         border-radius: 999px;
-        background: rgba(200, 95, 50, 0.08);
-        color: var(--ink);
-        font-size: 11px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 10px;
+        letter-spacing: 0.06em;
       }
 
       @media (max-width: 900px) {
