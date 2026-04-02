@@ -86,9 +86,8 @@ export function renderDemoPage(): string {
             controls
             playsinline
             preload="metadata"
-            poster=""
           >
-            <source src="/setup.mp4" type="video/mp4" />
+            <source src="/amp-001-setup.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
