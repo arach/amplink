@@ -1,4 +1,5 @@
 import { handleControlRequest, resolveUserId } from "./control.ts";
+import { renderDemoPage } from "./demo-page.ts";
 import { renderLandingPage } from "./landing-page.ts";
 import { handleRelayRequest } from "./relay.ts";
 import { handleVoiceAdminRequest } from "./voice-admin.ts";
@@ -62,6 +63,12 @@ export async function handleWorkerFetch(
       });
     }
     return new Response(renderLandingPage(), {
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/demo") {
+    return new Response(renderDemoPage(), {
       headers: { "content-type": "text/html; charset=utf-8" },
     });
   }
