@@ -2,6 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { resolveConfigLayers } from "./config.ts";
 
 describe("resolveConfigLayers", () => {
+  test("falls back to the desktop bridge default port", () => {
+    const resolved = resolveConfigLayers({}, {});
+
+    expect(resolved.port).toBe(17888);
+    expect(resolved.secure).toBe(false);
+    expect(resolved.pair).toBe(false);
+  });
+
   test("preserves workspace and auto-start sessions from file config", () => {
     const resolved = resolveConfigLayers(
       {

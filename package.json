@@ -72,6 +72,7 @@
     "src/adapters/opencode.ts",
     "src/adapters/pi.ts",
     "src/bridge/bridge.ts",
+    "src/bridge/adapters.ts",
     "src/bridge/buffer.ts",
     "src/bridge/config.ts",
     "src/bridge/fileserver.ts",

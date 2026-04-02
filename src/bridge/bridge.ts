@@ -69,6 +69,12 @@ export class Bridge {
       env: options?.env,
       options: options?.options,
     };
+    log.info("session", "create:start", {
+      sessionId,
+      adapterType,
+      name: config.name,
+      cwd: config.cwd,
+    });
 
     // Detect git branch in the session's cwd.
     let branch: string | undefined;
@@ -113,12 +119,30 @@ export class Bridge {
     // Register with state tracker before start so events during startup are captured.
     this.stateTracker.createSession(sessionId, adapter.session);
 
-    await adapter.start();
+    try {
+      await adapter.start();
+    } catch (err: any) {
+      this.sessions.delete(sessionId);
+      this.stateTracker.removeSession(sessionId);
+      const message = err instanceof Error ? err.message : String(err);
+      log.error("session", "create:failed", {
+        sessionId,
+        adapterType,
+        error: message,
+      });
+      throw err;
+    }
 
     // Track post-start session state (adapter.start may have set status).
     this.stateTracker.trackEvent(sessionId, {
       event: "session:update",
       session: { ...adapter.session },
+    });
+    log.info("session", "create:ready", {
+      sessionId,
+      adapterType: adapter.session.adapterType,
+      status: adapter.session.status,
+      cwd: adapter.session.cwd,
     });
 
     return adapter.session;

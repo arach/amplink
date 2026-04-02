@@ -15,7 +15,7 @@ The foundation is solid and tested. Here's what exists at `src/`:
 ### Bridge (`src/bridge/`)
 - **Bridge** (`bridge.ts`): Session manager. Creates adapter instances, routes events, manages lifecycle.
 - **Server** (`server.ts`): WebSocket server with JSON-RPC dispatch. Five methods: `session/create`, `session/list`, `session/close`, `prompt/send`, `turn/interrupt`.
-- **Entry point** (`main.ts`): `bun run bridge` starts on ws://localhost:7888.
+- **Entry point** (`main.ts`): `bun run bridge` starts on ws://localhost:17888.
 
 ### Relay (`src/relay/`)
 - **Relay** (`relay.ts`): Room-based WebSocket forwarder. One bridge + N clients per room. 30s grace on bridge disconnect. Forwards everything verbatim — it never reads payloads.

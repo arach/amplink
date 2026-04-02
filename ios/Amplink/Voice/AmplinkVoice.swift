@@ -202,11 +202,11 @@ final class AmplinkVoice: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private var recordingURL: URL?
     private let cloudflareSession = URLSession(configuration: .default)
 
-    static let replyAudioModeKey = "amplink.voiceReplyAudioMode"
-    static let voiceInputModeKey = "amplink.voiceInputMode"
-    static let cloudflareBaseURLSettingsKey = "amplink.cloudflareVoiceBaseURL"
-    static let cloudflareUserIdSettingsKey = "amplink.cloudflareVoiceUserID"
-    static let defaultCloudflareBaseURL = "https://amplink.arach.workers.dev"
+    nonisolated static let replyAudioModeKey = "amplink.voiceReplyAudioMode"
+    nonisolated static let voiceInputModeKey = "amplink.voiceInputMode"
+    nonisolated static let cloudflareBaseURLSettingsKey = "amplink.cloudflareVoiceBaseURL"
+    nonisolated static let cloudflareUserIdSettingsKey = "amplink.cloudflareVoiceUserID"
+    nonisolated static let defaultCloudflareBaseURL = "https://amplink.arach.workers.dev"
 
     static var configuredCloudflareBaseURL: String {
         let stored = UserDefaults.standard.string(forKey: cloudflareBaseURLSettingsKey)?

@@ -2,7 +2,9 @@
 // Amplink CLI
 //
 // Usage:
-//   amplink init                    — Set up workspace, identity, and config
+//   amplink init                    — Set up the CF-only desktop flow
+//   amplink desktop up              — Start local bridge + desktop listener
+//   amplink desktop listen          — Start only the desktop listener
 //   amplink start                   — Start bridge + relay
 //   amplink pair                    — Show QR code for phone pairing
 //   amplink open <project>          — Open a project session (starts bridge if needed)
@@ -16,11 +18,17 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from "fs";
 import { join, basename, resolve } from "path";
 import { homedir } from "os";
-import { execSync, spawn, type ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import { runCloudflareSetup } from "./setup/cloudflare.ts";
+import type { AdapterEntry } from "./bridge/config.ts";
 
 const AMPLINK_DIR = join(homedir(), ".amplink");
 const CONFIG_FILE = join(AMPLINK_DIR, "config.json");
+const DEFAULT_WORKSPACE_ROOT = "~/dev";
+const DEFAULT_BRIDGE_PORT = 17888;
+const DEFAULT_CF_CONTROL_BASE_URL = "wss://amplink.arach.workers.dev";
+const DEFAULT_CF_WORKER_URL = "https://amplink.arach.workers.dev";
+const DEFAULT_INIT_ADAPTER = "codex";
 
 // ---------------------------------------------------------------------------
 // Config helpers
@@ -30,8 +38,12 @@ interface Config {
   relay?: string;
   secure?: boolean;
   port?: number;
+  adapters?: Record<string, AdapterEntry>;
   workspace?: { root: string };
   sessions?: Array<{ adapter: string; name: string; cwd?: string; options?: Record<string, unknown> }>;
+  cloudflare?: {
+    accountId?: string;
+  };
   [key: string]: unknown;
 }
 
@@ -53,6 +65,99 @@ function resolvePath(p: string): string {
   return resolve(p.replace(/^~/, homedir()));
 }
 
+function getArg(flag: string): string | undefined {
+  const idx = process.argv.indexOf(flag);
+  if (idx === -1 || idx + 1 >= process.argv.length) return undefined;
+  return process.argv[idx + 1];
+}
+
+function hasFlag(flag: string): boolean {
+  return process.argv.includes(flag);
+}
+
+function parseEnvFile(content: string): Record<string, string> {
+  const values: Record<string, string> = {};
+
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const withoutExport = trimmed.startsWith("export ")
+      ? trimmed.slice("export ".length).trim()
+      : trimmed;
+    const separator = withoutExport.indexOf("=");
+    if (separator <= 0) continue;
+
+    const key = withoutExport.slice(0, separator).trim();
+    const rawValue = withoutExport.slice(separator + 1).trim();
+    values[key] =
+      (rawValue.startsWith("\"") && rawValue.endsWith("\"")) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"))
+        ? rawValue.slice(1, -1)
+        : rawValue;
+  }
+
+  return values;
+}
+
+function upsertEnvFile(path: string, updates: Record<string, string | undefined>): void {
+  const existing = existsSync(path) ? readFileSync(path, "utf8") : "";
+  const merged = {
+    ...parseEnvFile(existing),
+    ...Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => value !== undefined),
+    ),
+  };
+
+  const orderedKeys = [
+    "AMPLINK_CLOUDFLARE_PROJECT_ID",
+    "AMPLINK_CONTROL_BASE_URL",
+    "AMPLINK_CLOUDFLARE_WORKER_URL",
+    "AMPLINK_DESKTOP_LISTENER_TOKEN",
+    "AMPLINK_BRIDGE_URL",
+  ];
+
+  const keys = [
+    ...orderedKeys.filter((key) => key in merged),
+    ...Object.keys(merged).filter((key) => !orderedKeys.includes(key)),
+  ];
+
+  const lines = keys.map((key) => `${key}="${merged[key]}"`);
+  writeFileSync(path, `${lines.join("\n")}\n`);
+}
+
+function looksLikeProject(path: string): boolean {
+  return [
+    ".git",
+    "package.json",
+    "Package.swift",
+    "Cargo.toml",
+    "go.mod",
+    "pyproject.toml",
+    "setup.py",
+  ].some((marker) => existsSync(join(path, marker)));
+}
+
+function inferProjectPath(): string | null {
+  const cwd = process.cwd();
+  if (cwd === homedir()) return null;
+  return looksLikeProject(cwd) ? cwd : null;
+}
+
+function deriveRelayUrlFromWorker(workerUrl?: string): string | undefined {
+  if (!workerUrl) return undefined;
+  try {
+    const url = new URL(workerUrl);
+    url.protocol = url.protocol === "https:" ? "wss:" : url.protocol === "http:" ? "ws:" : url.protocol;
+    url.pathname = "/relay";
+    url.search = "";
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
@@ -63,47 +168,33 @@ async function init(): Promise<void> {
 
   mkdirSync(AMPLINK_DIR, { recursive: true });
   const config = loadConfig();
+  const workspaceRoot = getArg("--workspace-root") ?? config.workspace?.root ?? DEFAULT_WORKSPACE_ROOT;
+  const bridgePort = Number(getArg("--port") ?? config.port ?? DEFAULT_BRIDGE_PORT);
+  const bridgeUrl = `ws://127.0.0.1:${bridgePort}`;
+  const savedAccountId = config.cloudflare?.accountId?.trim() || "";
+  const envAccountId = process.env.AMPLINK_CLOUDFLARE_ACCOUNT_ID?.trim() || "";
+  const accountIdDefault = getArg("--account-id") ?? envAccountId ?? savedAccountId;
+  const inferredProject = hasFlag("--no-project") ? null : inferProjectPath();
 
-  // Workspace root
-  if (!config.workspace?.root) {
-    const defaultRoot = "~/dev";
-    const root = prompt(`  workspace root [${defaultRoot}]:`) || defaultRoot;
-    config.workspace = { root };
-    console.log(`  ✓ workspace: ${root}`);
-  } else {
-    console.log(`  ✓ workspace: ${config.workspace.root} (already set)`);
+  config.workspace = { root: workspaceRoot };
+  config.secure = true;
+  config.port = Number.isFinite(bridgePort) && bridgePort > 0 ? bridgePort : DEFAULT_BRIDGE_PORT;
+  config.cloudflare ??= {};
+
+  if (!config.cloudflare.accountId) {
+    const prompted =
+      accountIdDefault ||
+      (prompt("  Cloudflare account ID (32 chars from the dashboard URL):") || "").trim();
+    if (!prompted) {
+      console.error("\n  Cloudflare account ID is required. Run amplink init again.");
+      process.exit(1);
+    }
+    config.cloudflare.accountId = prompted;
   }
 
-  // Relay
-  if (!config.relay) {
-    // Try to detect Tailscale
-    let defaultRelay = "wss://localhost:7889";
-    try {
-      const tsOutput = execSync("tailscale status --self=true --peers=false --json", {
-        stdio: ["pipe", "pipe", "pipe"],
-        timeout: 5000,
-      }).toString();
-      const tsData = JSON.parse(tsOutput);
-      const dnsName = (tsData?.Self?.DNSName ?? "").replace(/\.$/, "");
-      if (dnsName) {
-        defaultRelay = `wss://${dnsName}:7889`;
-        console.log(`  ℹ Tailscale detected: ${dnsName}`);
-      }
-    } catch { /* no tailscale */ }
-
-    const relay = prompt(`  relay URL [${defaultRelay}]:`) || defaultRelay;
-    config.relay = relay;
-    config.secure = true;
-    console.log(`  ✓ relay: ${relay}`);
-  } else {
-    console.log(`  ✓ relay: ${config.relay} (already set)`);
-  }
-
-  // Port
-  if (!config.port) {
-    config.port = 7888;
-    console.log(`  ✓ port: 7888`);
-  }
+  console.log(`  ✓ workspace: ${config.workspace.root}`);
+  console.log(`  ✓ bridge   : ${bridgeUrl}`);
+  console.log(`  ✓ account  : ${config.cloudflare.accountId}`);
 
   // Generate identity
   const identityFile = join(AMPLINK_DIR, "identity.json");
@@ -116,21 +207,39 @@ async function init(): Promise<void> {
     console.log(`  ✓ identity: exists`);
   }
 
-  // TLS cert
-  const hasCert = readdirSync(AMPLINK_DIR).some(f => f.endsWith(".crt"));
-  if (!hasCert) {
-    console.log(`  ℹ TLS cert will be auto-generated on first relay start`);
+  config.sessions ??= [];
+  if (inferredProject) {
+    const projectName = basename(inferredProject);
+    const existing = config.sessions.find((session) => session.cwd === inferredProject);
+    if (!existing) {
+      config.sessions.push({
+        adapter: DEFAULT_INIT_ADAPTER,
+        name: projectName,
+        cwd: inferredProject,
+      });
+      console.log(`  ✓ session  : ${projectName} (${DEFAULT_INIT_ADAPTER})`);
+    } else {
+      console.log(`  ✓ session  : ${existing.name} (${existing.adapter})`);
+    }
   } else {
-    console.log(`  ✓ TLS cert: exists`);
+    console.log(`  ℹ session  : no current project detected`);
   }
 
   saveConfig(config);
 
+  const envFile = join(findAmplinkRoot(), ".env.local");
+  upsertEnvFile(envFile, {
+    AMPLINK_CLOUDFLARE_ACCOUNT_ID: config.cloudflare.accountId,
+    AMPLINK_BRIDGE_URL: bridgeUrl,
+  });
+  console.log(`  ✓ env      : ${envFile}`);
+
   console.log(`\n  config saved to ${CONFIG_FILE}`);
   console.log(`\n  next steps:`);
-  console.log(`    amplink start        — start bridge + relay`);
-  console.log(`    amplink workspace    — browse your projects`);
-  console.log(`    amplink pair         — show QR code for phone`);
+  console.log(`    1. bun run setup:cloudflare`);
+  console.log(`       (choose the worker/project label, grant permissions, mint listener token)`);
+  console.log(`    2. bun run desktop:up`);
+  console.log(`    3. ./bin/amplink-dev deploy`);
   console.log("");
 }
 
@@ -185,20 +294,83 @@ function start(): void {
   }, 500);
 }
 
-function pair(): void {
+function desktop(subcommand?: string): void {
+  const root = findAmplinkRoot();
+
+  switch (subcommand ?? "up") {
+    case "up": {
+      const proc = spawn("bun", ["run", "desktop:up"], {
+        cwd: root,
+        stdio: "inherit",
+      });
+      process.on("SIGINT", () => { proc.kill(); process.exit(0); });
+      process.on("SIGTERM", () => { proc.kill(); process.exit(0); });
+      proc.on("exit", (code) => process.exit(code ?? 0));
+      return;
+    }
+
+    case "listen": {
+      const proc = spawn("bun", ["run", "desktop:listen"], {
+        cwd: root,
+        stdio: "inherit",
+      });
+      process.on("SIGINT", () => { proc.kill(); process.exit(0); });
+      process.on("SIGTERM", () => { proc.kill(); process.exit(0); });
+      proc.on("exit", (code) => process.exit(code ?? 0));
+      return;
+    }
+
+    default:
+      console.error("  usage: amplink desktop <up|listen>");
+      process.exit(1);
+  }
+}
+
+async function pair(): Promise<void> {
   if (!existsSync(CONFIG_FILE)) {
     console.error("  amplink is not initialized. Run: amplink init");
     process.exit(1);
   }
 
-  // Just start bridge in pair mode — it shows QR
-  const proc = spawn("bun", ["run", "src/bridge/main.ts", "--pair"], {
-    cwd: findAmplinkRoot(),
-    stdio: "inherit",
+  const root = findAmplinkRoot();
+  const config = loadConfig();
+  const workerUrl = process.env.AMPLINK_CLOUDFLARE_WORKER_URL?.trim() || DEFAULT_CF_WORKER_URL;
+  const relayUrl = config.relay ?? deriveRelayUrlFromWorker(workerUrl);
+
+  if (!relayUrl) {
+    console.error("  amplink pair needs either a relay URL or a configured Cloudflare worker URL.");
+    console.error("  run: amplink setup cloudflare");
+    process.exit(1);
+  }
+
+  const [{ Bridge }, { createAdapterRegistry }, { connectToRelay }, { printQRCode }, { loadOrCreateIdentity }] = await Promise.all([
+    import("./bridge/bridge.ts"),
+    import("./bridge/adapters.ts"),
+    import("./bridge/relay-client.ts"),
+    import("./bridge/qr.ts"),
+    import("./security/index.ts"),
+  ]);
+
+  const identity = loadOrCreateIdentity();
+  const bridge = new Bridge({ adapters: createAdapterRegistry(config.adapters) });
+  const relayConnection = connectToRelay(relayUrl, identity, bridge, {
+    secure: true,
+    cloudflareBaseUrl: workerUrl,
   });
 
-  process.on("SIGINT", () => { proc.kill(); process.exit(0); });
-  proc.on("exit", (code) => process.exit(code ?? 0));
+  printQRCode(relayConnection.qrPayload);
+  console.log("[pair] waiting for the phone to scan and trust this bridge...");
+  console.log("[pair] press Ctrl+C when pairing is complete");
+
+  const shutdown = (): void => {
+    relayConnection.disconnect();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
+  await new Promise(() => {});
 }
 
 function status(): void {
@@ -213,7 +385,7 @@ function status(): void {
 
   console.log(`  config  : ${CONFIG_FILE}`);
   console.log(`  relay   : ${config.relay ?? "not set"}`);
-  console.log(`  port    : ${config.port ?? 7888}`);
+  console.log(`  port    : ${config.port ?? DEFAULT_BRIDGE_PORT}`);
   console.log(`  root    : ${config.workspace?.root ?? "not set"}`);
   console.log(`  sessions: ${config.sessions?.length ?? 0} auto-start`);
 
@@ -380,8 +552,12 @@ switch (cmd) {
     start();
     break;
 
+  case "desktop":
+    desktop(args[0]);
+    break;
+
   case "pair":
-    pair();
+    await pair();
     break;
 
   case "status":
@@ -425,7 +601,8 @@ switch (cmd) {
   amplink — universal viewport for AI coding sessions
 
   commands:
-    init                     set up workspace, identity, and config
+    init                     set up the CF-only desktop flow
+    desktop <up|listen>      run the local desktop-side processes
     start                    start bridge + relay
     pair                     show QR code for phone pairing
     open <project>           add a project session (--adapter codex)
@@ -437,6 +614,9 @@ switch (cmd) {
 
   examples:
     amplink init
+    amplink desktop up
+    amplink desktop listen
+    amplink init --project-id demo
     amplink open amplink
     amplink open myapp --adapter codex
     amplink setup cloudflare

@@ -548,10 +548,22 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
 
         const adapterType = p.adapter ?? "claude-code";
         const name = p.name ?? basename(projectPath);
+        log.info("workspace", "open:start", {
+          requestedPath: p.path,
+          projectPath,
+          adapterType,
+          name,
+        });
 
         const session = await bridge.createSession(adapterType, {
           name,
           cwd: projectPath,
+        });
+        log.info("workspace", "open:success", {
+          sessionId: session.id,
+          adapterType: session.adapterType,
+          status: session.status,
+          cwd: session.cwd,
         });
         return { id: req.id, result: session };
       }
@@ -639,6 +651,10 @@ export async function handleRPC(bridge: Bridge, req: RPCRequest): Promise<RPCRes
         return { id: req.id, error: { code: -32601, message: `Unknown method: ${req.method}` } };
     }
   } catch (err: any) {
+    log.error("rpc", `${req.method} failed`, {
+      error: err.message ?? "Internal error",
+      params: req.params,
+    });
     return { id: req.id, error: { code: -32000, message: err.message ?? "Internal error" } };
   }
 }

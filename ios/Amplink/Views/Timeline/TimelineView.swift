@@ -110,7 +110,7 @@ struct TimelineView: View {
                 turnCount: turns.filter { $0.isUserTurn != true }.count,
                 branch: cwdBranch,
                 onSend: { text in
-                    store.appendLocalUserTurn(text: text, sessionId: sessionId)
+                    let optimisticTurnId = store.appendLocalUserTurn(text: text, sessionId: sessionId)
 
                     Task {
                         do {
@@ -118,6 +118,9 @@ struct TimelineView: View {
                             try await connection.sendPrompt(prompt)
                             sendError = nil
                         } catch {
+                            if let optimisticTurnId {
+                                store.removeLocalTurn(turnId: optimisticTurnId, sessionId: sessionId)
+                            }
                             sendError = error.localizedDescription
                         }
                     }

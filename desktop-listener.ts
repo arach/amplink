@@ -53,12 +53,13 @@ interface SequencedBridgeEvent {
 }
 
 const DEFAULT_CONTROL_URL = "wss://amplink-control.myworker.dev/listen?token=TEST_TOKEN";
-const DEFAULT_BRIDGE_URL = "ws://127.0.0.1:7888";
+const DEFAULT_BRIDGE_CONFIG = resolveConfig();
+const DEFAULT_BRIDGE_URL = `ws://127.0.0.1:${DEFAULT_BRIDGE_CONFIG.port}`;
 const DEFAULT_RECONNECT_MS = 3_000;
 const DEFAULT_RPC_TIMEOUT_MS = 10_000;
 const DEFAULT_TASK_TIMEOUT_MS = 5 * 60_000;
 const DEFAULT_ENV_FILE = ".env.local";
-const DEFAULT_BRIDGE_SECURE = resolveConfig().secure ?? false;
+const DEFAULT_BRIDGE_SECURE = DEFAULT_BRIDGE_CONFIG.secure ?? false;
 
 export function getDesktopListenerConfig(
   env: NodeJS.ProcessEnv = process.env,

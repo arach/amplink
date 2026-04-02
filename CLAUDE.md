@@ -28,7 +28,7 @@ Primitives are aligned with Vercel AI SDK LanguageModelV3 content types.
 ## Commands
 
 ```bash
-bun run bridge              # Start bridge on ws://localhost:7888
+bun run bridge              # Start bridge on ws://localhost:17888
 bun run relay               # Start relay on ws://localhost:7889
 bun run bridge -- --port N  # Custom port
 bun run typecheck           # TypeScript check

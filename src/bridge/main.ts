@@ -2,7 +2,7 @@
 // Bridge entry point.
 //
 // Usage:
-//   bun run bridge                                # defaults: port 7888, plaintext
+//   bun run bridge                                # defaults: port 17888, plaintext
 //   bun run bridge -- --port 9000                 # custom port
 //   bun run bridge -- --secure                    # enable Noise encryption on local WS
 //   bun run bridge -- --relay ws://relay:7889     # connect outbound to relay
@@ -16,19 +16,13 @@ import { startBridgeServer } from "./server.ts";
 import { startFileServer, type FileServer } from "./fileserver.ts";
 import { connectToRelay } from "./relay-client.ts";
 import { resolveConfig, CONFIG_FILE } from "./config.ts";
-import type { AdapterEntry } from "./config.ts";
+import { createAdapterRegistry } from "./adapters.ts";
 import { printQRCode } from "./qr.ts";
-import { createAdapter as createClaudeCode } from "../adapters/claude-code.ts";
-import { createAdapter as createOpenAI } from "../adapters/openai-compat.ts";
-import { createAdapter as createCodex } from "../adapters/codex.ts";
-import { createAdapter as createPi } from "../adapters/pi.ts";
-import { createAdapter as createOpenCode } from "../adapters/opencode.ts";
 import { loadOrCreateIdentity, bytesToHex } from "../security/index.ts";
 import { log } from "./log.ts";
 import { homedir } from "os";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
-import type { AdapterFactory } from "../protocol/index.ts";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -48,40 +42,7 @@ const identity = loadOrCreateIdentity();
 // Adapter registry — hardcoded + config-driven
 // ---------------------------------------------------------------------------
 
-const adapters: Record<string, AdapterFactory> = {
-  "claude-code": createClaudeCode,
-  "codex": createCodex,
-  "pi": createPi,
-  "opencode": createOpenCode,
-  "openai": createOpenAI,
-};
-
-// Auto-register adapters from config file.
-// Config adapters map a name to { type, options }. The type must reference
-// an existing built-in adapter (we use it as a factory with pre-baked options).
-if (config.adapters) {
-  for (const [name, entry] of Object.entries(config.adapters)) {
-    registerConfigAdapter(name, entry);
-  }
-}
-
-function registerConfigAdapter(name: string, entry: AdapterEntry): void {
-  const baseFactory = adapters[entry.type];
-  if (!baseFactory) {
-    console.warn(`[bridge] config adapter "${name}" references unknown type "${entry.type}" — skipped`);
-    return;
-  }
-
-  // Create a factory that merges the config-level options as defaults,
-  // with per-session options overlaid on top.
-  adapters[name] = (adapterConfig) => {
-    const merged = {
-      ...adapterConfig,
-      options: { ...entry.options, ...adapterConfig.options },
-    };
-    return baseFactory(merged);
-  };
-}
+const adapters = createAdapterRegistry(config.adapters);
 
 // ---------------------------------------------------------------------------
 // Bridge
@@ -144,7 +105,7 @@ if (config.pair) {
 // Auto-start sessions from config
 // ---------------------------------------------------------------------------
 
-if (config.sessions?.length) {
+if (!config.pair && config.sessions?.length) {
   console.log(`[bridge] auto-starting ${config.sessions.length} session(s)...`);
   for (const entry of config.sessions) {
     bridge.createSession(entry.adapter, {

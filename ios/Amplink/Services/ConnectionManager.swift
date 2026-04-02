@@ -103,9 +103,6 @@ struct BridgeConnectionInfo: Codable, Sendable, Equatable {
 
 @Observable
 final class ConnectionManager: @unchecked Sendable {
-    private static let cloudflareBaseURLSettingsKey = "amplink.cloudflareVoiceBaseURL"
-    private static let defaultCloudflareBaseURL = "https://amplink.arach.workers.dev"
-
     // MARK: Observable state
 
     private(set) var state: ConnectionState = .disconnected
@@ -176,17 +173,7 @@ final class ConnectionManager: @unchecked Sendable {
     init(sessionStore: SessionStore) {
         self.sessionStore = sessionStore
         self.urlSession = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: nil)
-        let storedConnectionInfo = Self.loadConnectionInfo()
-        let normalizedConnectionInfo = Self.normalizeConnectionInfo(storedConnectionInfo)
-        self.connectionInfo = normalizedConnectionInfo
-        if let storedConnectionInfo,
-           let normalizedConnectionInfo,
-           storedConnectionInfo != normalizedConnectionInfo {
-            saveConnectionInfo(normalizedConnectionInfo)
-            Self.logger.notice(
-                "Migrated paired relay to Cloudflare relay: \(normalizedConnectionInfo.relayURL, privacy: .public)"
-            )
-        }
+        self.connectionInfo = Self.loadConnectionInfo()
     }
 
     deinit {
@@ -248,12 +235,15 @@ final class ConnectionManager: @unchecked Sendable {
             saveConnectionInfo(info)
             connectionInfo = info
 
+            // Pairing may also advertise the matching voice worker URL.
+            // That setting is for voice only; relay reconnects must keep using
+            // the exact relay URL that was scanned from the QR code.
             if let cloudflareBaseURL = qrPayload.cloudflareBaseUrl?
                 .trimmingCharacters(in: .whitespacesAndNewlines),
                !cloudflareBaseURL.isEmpty {
                 UserDefaults.standard.set(
                     cloudflareBaseURL,
-                    forKey: Self.cloudflareBaseURLSettingsKey
+                    forKey: AmplinkVoice.cloudflareBaseURLSettingsKey
                 )
                 Self.logger.notice(
                     "Paired Cloudflare backend: \(cloudflareBaseURL, privacy: .public)"
@@ -465,8 +455,25 @@ final class ConnectionManager: @unchecked Sendable {
             cwd: cwd,
             options: options
         )
-        let data = try await sendRPC(method: "session/create", params: params)
-        return try decodeResult(Session.self, from: data)
+        AmplinkLog.network.info(
+            "session/create request",
+            detail: "adapterType=\(adapterType) name=\(name ?? "nil") cwd=\(cwd ?? "nil")"
+        )
+        do {
+            let data = try await sendRPC(method: "session/create", params: params)
+            if let raw = String(data: data, encoding: .utf8) {
+                AmplinkLog.network.debug("session/create response", detail: raw)
+            }
+            let session = try decodeResult(Session.self, from: data)
+            AmplinkLog.session.info(
+                "Session created",
+                detail: "sessionId=\(session.id) adapterType=\(session.adapterType) status=\(session.status.rawValue) cwd=\(session.cwd ?? "nil")"
+            )
+            return session
+        } catch {
+            AmplinkLog.network.error("session/create failed", detail: error.localizedDescription)
+            throw error
+        }
     }
 
     func listSessions() async throws -> [Session] {
@@ -480,7 +487,19 @@ final class ConnectionManager: @unchecked Sendable {
     }
 
     func sendPrompt(_ prompt: Prompt) async throws {
-        _ = try await sendRPC(method: "prompt/send", params: prompt)
+        AmplinkLog.network.info(
+            "prompt/send request",
+            detail: "sessionId=\(prompt.sessionId) text=\(prompt.text)"
+        )
+        do {
+            let data = try await sendRPC(method: "prompt/send", params: prompt)
+            if let raw = String(data: data, encoding: .utf8) {
+                AmplinkLog.network.debug("prompt/send response", detail: raw)
+            }
+        } catch {
+            AmplinkLog.network.error("prompt/send failed", detail: error.localizedDescription)
+            throw error
+        }
     }
 
     func interruptTurn(_ sessionId: String) async throws {
@@ -526,8 +545,25 @@ final class ConnectionManager: @unchecked Sendable {
 
     func workspaceOpen(path: String, adapter: String? = nil, name: String? = nil) async throws -> Session {
         let params = WorkspaceOpenParams(path: path, adapter: adapter, name: name)
-        let data = try await sendRPC(method: "workspace/open", params: params)
-        return try decodeResult(Session.self, from: data)
+        AmplinkLog.network.info(
+            "workspace/open request",
+            detail: "path=\(path) adapter=\(adapter ?? "nil") name=\(name ?? "nil")"
+        )
+        do {
+            let data = try await sendRPC(method: "workspace/open", params: params)
+            if let raw = String(data: data, encoding: .utf8) {
+                AmplinkLog.network.debug("workspace/open response", detail: raw)
+            }
+            let session = try decodeResult(Session.self, from: data)
+            AmplinkLog.session.info(
+                "Workspace opened",
+                detail: "sessionId=\(session.id) adapterType=\(session.adapterType) status=\(session.status.rawValue) cwd=\(session.cwd ?? "nil")"
+            )
+            return session
+        } catch {
+            AmplinkLog.network.error("workspace/open failed", detail: error.localizedDescription)
+            throw error
+        }
     }
 
     // MARK: - Session Resume
@@ -700,6 +736,10 @@ final class ConnectionManager: @unchecked Sendable {
         pending.timeoutTask.cancel()
 
         if let error = response.error {
+            AmplinkLog.network.warning(
+                "RPC \(pending.method) error",
+                detail: "code=\(error.code) message=\(error.message)"
+            )
             pending.continuation.resume(
                 throwing: ConnectionError.rpcError(code: error.code, message: error.message)
             )
@@ -866,58 +906,6 @@ final class ConnectionManager: @unchecked Sendable {
             return nil
         }
         return try? JSONDecoder().decode(BridgeConnectionInfo.self, from: data)
-    }
-
-    private static func normalizeConnectionInfo(
-        _ info: BridgeConnectionInfo?
-    ) -> BridgeConnectionInfo? {
-        guard var info else {
-            return nil
-        }
-
-        guard let cloudflareRelayURL = cloudflareRelayURL(
-            from: configuredCloudflareBaseURL()
-        ) else {
-            return info
-        }
-
-        if info.relayURL != cloudflareRelayURL {
-            info.relayURL = cloudflareRelayURL
-        }
-
-        return info
-    }
-
-    private static func cloudflareRelayURL(from baseURL: String) -> String? {
-        let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty,
-              var components = URLComponents(string: trimmed) else {
-            return nil
-        }
-
-        switch components.scheme {
-        case "https":
-            components.scheme = "wss"
-        case "http":
-            components.scheme = "ws"
-        default:
-            return nil
-        }
-
-        components.path = "/relay"
-        components.query = nil
-        components.fragment = nil
-        return components.url?.absoluteString
-    }
-
-    private static func configuredCloudflareBaseURL() -> String {
-        let stored = UserDefaults.standard.string(forKey: cloudflareBaseURLSettingsKey)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if let stored, !stored.isEmpty {
-            return stored
-        }
-
-        return defaultCloudflareBaseURL
     }
 
     private func saveConnectionInfo(_ info: BridgeConnectionInfo) {

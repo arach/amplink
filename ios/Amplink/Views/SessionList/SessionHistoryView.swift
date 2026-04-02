@@ -256,10 +256,18 @@ struct CachedSessionView: View {
 
             guard let sid = liveSessionId else { return }
 
-            store.appendLocalUserTurn(text: text, sessionId: sid)
+            let optimisticTurnId = store.appendLocalUserTurn(text: text, sessionId: sid)
 
             // Send to bridge
-            try? await connection.sendPrompt(Prompt(sessionId: sid, text: text))
+            do {
+                try await connection.sendPrompt(Prompt(sessionId: sid, text: text))
+                fetchError = nil
+            } catch {
+                if let optimisticTurnId {
+                    store.removeLocalTurn(turnId: optimisticTurnId, sessionId: sid)
+                }
+                fetchError = "Could not send message: \(error.localizedDescription)"
+            }
         }
     }
 

@@ -54,7 +54,7 @@ export interface AmplinkConfig {
 // ---------------------------------------------------------------------------
 
 const DEFAULTS: AmplinkConfig = {
-  port: 7888,
+  port: 17888,
   secure: false,
 };
 

@@ -6,6 +6,13 @@ To install dependencies:
 bun install
 ```
 
+Quick CF-only desktop setup:
+
+```bash
+amplink init --project-id YOUR_WORKER_LABEL
+# then add AMPLINK_DESKTOP_LISTENER_TOKEN to .env.local
+```
+
 To run:
 
 ```bash
@@ -148,7 +155,7 @@ AMPLINK_SMOKE_BASE_URL="http://127.0.0.1:8787" bun run smoke:cloudflare
 
 ### Desktop listener
 
-The default desktop path is now one outbound WebSocket from your machine to Cloudflare. The listener script lives at [desktop-listener.ts](/Users/arach/dev/amplink/desktop-listener.ts) and proxies each incoming task into the local Amplink bridge on `ws://127.0.0.1:7888` by using the normal `session/list`, `prompt/send`, and `session/snapshot` RPC flow.
+The default desktop path is now one outbound WebSocket from your machine to Cloudflare. The listener script lives at [desktop-listener.ts](/Users/arach/dev/amplink/desktop-listener.ts) and proxies each incoming task into the local Amplink bridge on `ws://127.0.0.1:17888` by using the normal `session/list`, `prompt/send`, and `session/snapshot` RPC flow.
 
 Run it like this:
 
